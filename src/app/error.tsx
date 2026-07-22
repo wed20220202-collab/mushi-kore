@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <main className="phone-shell" style={{ display:"grid", placeItems:"center", padding:30, textAlign:"center" }}><div><h1>うまく読み込めませんでした</h1><p style={{ color:"var(--muted)" }}>通信状況を確認して、もう一度お試しください。</p><button className="capture" onClick={reset}>もう一度試す</button></div></main>; }

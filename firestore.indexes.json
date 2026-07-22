@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    { "collectionGroup": "insectRecords", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "favorite", "order": "ASCENDING" }, { "fieldPath": "capturedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "insectRecords", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "order", "order": "ASCENDING" }, { "fieldPath": "capturedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "insectRecords", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "dangerLevel", "order": "ASCENDING" }, { "fieldPath": "confidence", "order": "DESCENDING" }] },
+    { "collectionGroup": "insectRecords", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "searchKeywords", "arrayConfig": "CONTAINS" }, { "fieldPath": "capturedAt", "order": "DESCENDING" }] }
+  ],
+  "fieldOverrides": []
+}

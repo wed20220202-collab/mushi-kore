@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function protectedUserFieldsUnchanged() {
+      return request.resource.data.storageUserId == resource.data.storageUserId
+        && request.resource.data.driveFolderId == resource.data.driveFolderId
+        && request.resource.data.driveImageFolderId == resource.data.driveImageFolderId
+        && request.resource.data.totalImageCount == resource.data.totalImageCount
+        && request.resource.data.totalStorageBytes == resource.data.totalStorageBytes
+        && request.resource.data.storageLimitBytes == resource.data.storageLimitBytes
+        && request.resource.data.dailyUploadCount == resource.data.dailyUploadCount;
+    }
+    function protectedRecordFieldsUnchanged() {
+      return request.resource.data.userId == resource.data.userId
+        && request.resource.data.driveFileId == resource.data.driveFileId
+        && request.resource.data.driveFolderId == resource.data.driveFolderId
+        && request.resource.data.fileSize == resource.data.fileSize
+        && request.resource.data.contentHash == resource.data.contentHash
+        && request.resource.data.uploadStatus == resource.data.uploadStatus;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.storageUserId.matches('^user_[a-zA-Z0-9_-]{20,64}$')
+        && request.resource.data.driveFolderId == null
+        && request.resource.data.driveImageFolderId == null
+        && request.resource.data.totalImageCount == 0
+        && request.resource.data.totalStorageBytes == 0;
+      allow update: if (isOwner(uid) && protectedUserFieldsUnchanged()) || isAdmin();
+      allow delete: if false;
+
+      match /insectRecords/{recordId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if isOwner(uid)
+          && request.resource.data.userId == uid
+          && request.resource.data.id == recordId
+          && request.resource.data.localOnly == true
+          && request.resource.data.uploadStatus == 'preparing'
+          && request.resource.data.driveFileId == null
+          && request.resource.data.driveFolderId == null
+          && request.resource.data.contentHash == ''
+          && request.resource.data.fileSize <= 2 * 1024 * 1024;
+        allow delete: if false;
+        allow update: if (isOwner(uid) && protectedRecordFieldsUnchanged()) || isAdmin();
+      }
+      match /settings/{settingId} {
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
+      }
+      match /badges/{badgeId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /admin/{document=**} { allow read, write: if isAdmin(); }
+    match /operations/{document=**} { allow read, write: if isAdmin(); }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
