@@ -103,8 +103,35 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .login-card h1 { margin:48px 0 16px; font-size:3.4rem; line-height:1.04; letter-spacing:-.08em; max-width:390px; }
 .login-card p { color:#c9d8cf; line-height:1.8; max-width:350px; }
 .google-button { border:0; background:white; color:#26312c; border-radius:18px; min-height:56px; padding:0 20px; width:100%; font-weight:800; display:flex; align-items:center; justify-content:center; gap:12px; }
-.demo-button { border:0; color:#d9ef9f; background:transparent; min-height:48px; width:100%; margin-top:7px; font-weight:700; }
 .legal { font-size:.7rem; color:#91a49a; line-height:1.7; margin-top:18px; }
+.empty-collection { min-height:230px; padding:28px 22px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:1px dashed rgba(63,118,88,.3); border-radius:24px; background:rgba(255,253,246,.55); color:var(--muted); }
+.empty-collection.compact { min-height:250px; grid-column:1/-1; }
+.empty-collection-icon { width:54px; height:54px; display:grid; place-items:center; margin-bottom:13px; border-radius:19px; background:#e2eadc; color:var(--forest); }
+.empty-collection strong { color:var(--ink); }
+.empty-collection p { max-width:310px; margin:7px 0 17px; font-size:.78rem; line-height:1.7; }
+.empty-collection button { min-height:46px; padding:0 17px; display:flex; align-items:center; gap:8px; border:0; border-radius:999px; background:var(--forest); color:white; font-weight:900; }
+.tutorial { min-height:100dvh; display:flex; flex-direction:column; padding:22px 20px max(22px,env(safe-area-inset-bottom)); background:var(--cream); }
+.tutorial-topbar { min-height:42px; display:flex; align-items:center; justify-content:space-between; }
+.tutorial-topbar .brand { font-size:1.08rem; }
+.tutorial-topbar .brand-mark { width:34px; height:34px; border-radius:12px 12px 17px 17px; }
+.tutorial-skip { min-height:40px; padding:0 10px; border:0; background:transparent; color:var(--leaf); font-size:.76rem; font-weight:900; }
+.tutorial-intro { margin:25px 2px 15px; }
+.tutorial-intro h1 { margin:5px 0 0; font-size:1.8rem; letter-spacing:-.06em; }
+.tutorial-card { overflow:hidden; border:1px solid var(--line); border-radius:28px; background:var(--paper); box-shadow:0 17px 38px rgba(23,63,53,.12); }
+.tutorial-image { height:clamp(230px,36dvh,320px); position:relative; overflow:hidden; background:var(--forest); }
+.tutorial-step-icon { position:absolute; left:16px; bottom:16px; width:46px; height:46px; display:grid; place-items:center; border-radius:16px; background:rgba(217,239,159,.94); color:var(--forest-deep); box-shadow:0 7px 20px rgba(5,24,19,.2); }
+.tutorial-copy { min-height:194px; padding:22px 21px 24px; }
+.tutorial-copy h2 { margin:7px 0 9px; font-size:1.35rem; letter-spacing:-.05em; }
+.tutorial-copy p { margin:0; color:var(--muted); font-size:.79rem; line-height:1.8; }
+.tutorial-dots { display:flex; justify-content:center; gap:7px; margin:18px 0; }
+.tutorial-dots span { width:7px; height:7px; border-radius:99px; background:#bdc9bf; transition:.2s; }
+.tutorial-dots span.active { width:24px; background:var(--leaf); }
+.tutorial-actions { display:flex; gap:10px; margin-top:auto; }
+.tutorial-back,.tutorial-next { min-height:54px; border-radius:17px; display:flex; align-items:center; justify-content:center; gap:7px; font-weight:900; }
+.tutorial-back { width:105px; border:1px solid var(--line); background:var(--paper); color:var(--forest); }
+.tutorial-next { flex:1; border:0; background:var(--forest); color:white; box-shadow:0 11px 25px rgba(23,63,53,.2); }
+.tutorial-next:disabled,.tutorial-skip:disabled { opacity:.55; cursor:wait; }
+.tutorial-privacy { margin:13px 5px 0; color:var(--muted); text-align:center; font-size:.63rem; line-height:1.6; }
 .settings-list { display:grid; gap:10px; }
 .setting { width:100%; display:flex; align-items:center; gap:13px; padding:15px; border-radius:18px; background:var(--paper); color:var(--ink); border:1px solid var(--line); text-align:left; }
 .setting-icon { width:40px; height:40px; display:grid; place-items:center; border-radius:14px; background:#e5ebdf; color:var(--forest); }
@@ -308,6 +335,9 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
   .ai-progress { background:#25352f; }
   .demo-notice,.warning-panel { background:#3b3025; color:#e9caa9; }
   .error-orbit { background:#492c26; }
+  .empty-collection { background:rgba(23,36,31,.72); }
+  .empty-collection-icon { background:#203a2f; color:#d9ef9f; }
+  .tutorial { background:#101b18; }
 }
 
 html[data-theme="light"] { --cream:#f5f3e8; --paper:#fffdf6; --ink:#18231f; --muted:#68746e; --line:rgba(23,63,53,.12); background:#dfe8df; }
@@ -318,3 +348,6 @@ html[data-theme="dark"] body { background:#07120f; }
 html[data-theme="dark"] .app-header,html[data-theme="dark"] .bottom-nav,html[data-theme="dark"] .capture-header { background:rgba(16,27,24,.9); }
 html[data-theme="dark"] .settings-note,html[data-theme="dark"] .form-message { background:#203a2f; color:#cfe8c3; }
 html[data-theme="dark"] .danger-button { background:#392521; }
+html[data-theme="dark"] .tutorial { background:#101b18; }
+html[data-theme="dark"] .empty-collection { background:rgba(23,36,31,.72); }
+html[data-theme="dark"] .empty-collection-icon { background:#203a2f; color:#d9ef9f; }

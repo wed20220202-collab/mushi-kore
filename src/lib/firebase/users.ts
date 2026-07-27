@@ -29,16 +29,18 @@ export async function initializeUserProfile(user: User) {
       termsAccepted: false,
       privacyPolicyAccepted: false,
       age18Confirmed: false,
+      tutorialCompletedAt: null,
       uploadSuspended: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { consentRequired: true };
+    return { consentRequired: true, tutorialRequired: true };
   }
 
   const data = snapshot.data();
   return {
     consentRequired: data.termsAccepted !== true || data.privacyPolicyAccepted !== true || data.age18Confirmed !== true,
+    tutorialRequired: data.tutorialCompletedAt == null,
   };
 }
 
@@ -51,6 +53,14 @@ export async function acceptPolicies(uid: string) {
     termsAcceptedAt: serverTimestamp(),
     privacyPolicyAcceptedAt: serverTimestamp(),
     age18ConfirmedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function completeTutorial(uid: string) {
+  if (!firestore) throw new Error("Firestore is not configured.");
+  await updateDoc(doc(firestore, "users", uid), {
+    tutorialCompletedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 }
