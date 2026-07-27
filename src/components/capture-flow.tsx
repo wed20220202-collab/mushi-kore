@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { clearCaptureDraft, loadCaptureDraft, saveCaptureDraft } from "@/lib/capture-draft-store";
 import type { CaptureDraft } from "@/lib/capture-draft-store";
-import { formatBytes, processImage, validateImageFile } from "@/lib/image-processing";
+import { detectBlobImageMimeType, formatBytes, processImage, validateImageFile } from "@/lib/image-processing";
 import type { CropMode, ProcessedImage } from "@/lib/image-processing";
 import type { IdentificationInput } from "@/lib/identification-types";
 import { readLocalPreferences } from "@/lib/firebase/preferences";
@@ -43,8 +43,10 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
     const updateOnline = () => setOnline(navigator.onLine);
     window.addEventListener("online", updateOnline);
     window.addEventListener("offline", updateOnline);
-    void loadCaptureDraft().then((draft) => {
+    void loadCaptureDraft().then(async (draft) => {
       if (!draft) return;
+      const detectedMimeType = await detectBlobImageMimeType(draft.blob);
+      if (!detectedMimeType) throw new Error("一時保存された画像形式を確認できませんでした。");
       const url = URL.createObjectURL(draft.blob);
       previewUrlRef.current = url;
       setPreviewUrl(url);
@@ -52,7 +54,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
         blob: draft.blob,
         width: draft.width,
         height: draft.height,
-        mimeType: draft.mimeType === "image/jpeg" ? "image/jpeg" : "image/webp",
+        mimeType: detectedMimeType,
         originalBytes: draft.originalBytes,
         compressedBytes: draft.compressedBytes,
       });

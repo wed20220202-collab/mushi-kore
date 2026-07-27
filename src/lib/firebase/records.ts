@@ -101,6 +101,7 @@ export async function registerLocalIdentification(
 ) {
   if (!firestore) throw new Error("Firestore is not configured.");
   const recordRef = doc(collection(firestore, "users", user.uid, "insectRecords"));
+  const storedExtension = input.image.mimeType === "image/webp" ? "webp" : input.image.mimeType === "image/png" ? "png" : "jpg";
   await setDoc(recordRef, {
     id: recordRef.id,
     userId: user.uid,
@@ -129,7 +130,7 @@ export async function registerLocalIdentification(
     driveFileId: null,
     driveFolderId: null,
     originalFileName: input.fileName,
-    storedFileName: `${recordRef.id}.${input.image.mimeType === "image/webp" ? "webp" : "jpg"}`,
+    storedFileName: `${recordRef.id}.${storedExtension}`,
     mimeType: input.image.mimeType,
     width: input.image.width,
     height: input.image.height,

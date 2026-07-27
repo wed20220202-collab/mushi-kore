@@ -1,3 +1,5 @@
+import { detectImageMimeType, hasValidImageSignature } from "@/lib/image-signature";
+
 export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const MAX_INPUT_BYTES = 20 * 1024 * 1024;
 export const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
@@ -9,7 +11,7 @@ export interface ProcessedImage {
   blob: Blob;
   width: number;
   height: number;
-  mimeType: "image/webp" | "image/jpeg";
+  mimeType: "image/webp" | "image/jpeg" | "image/png";
   originalBytes: number;
   compressedBytes: number;
 }
@@ -38,6 +40,16 @@ export function calculateCrop(width: number, height: number, aspect: number | nu
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+async function blobMatchesMimeType(blob: Blob, mimeType: ProcessedImage["mimeType"]) {
+  const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  return hasValidImageSignature(header, mimeType);
+}
+
+export async function detectBlobImageMimeType(blob: Blob) {
+  const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  return detectImageMimeType(header);
 }
 
 async function drawCompressed(
@@ -80,14 +92,16 @@ async function drawCompressed(
     context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, outputWidth, outputHeight);
   }
 
-  let blob = await canvasToBlob(canvas, "image/webp", quality);
-  let mimeType: ProcessedImage["mimeType"] = "image/webp";
-  if (!blob) {
-    blob = await canvasToBlob(canvas, "image/jpeg", quality);
-    mimeType = "image/jpeg";
+  const webpBlob = await canvasToBlob(canvas, "image/webp", quality);
+  if (webpBlob && await blobMatchesMimeType(webpBlob, "image/webp")) {
+    return { blob: webpBlob, width: outputWidth, height: outputHeight, mimeType: "image/webp" as const };
   }
-  if (!blob) throw new Error("画像を圧縮できませんでした。");
-  return { blob, width: outputWidth, height: outputHeight, mimeType };
+
+  const jpegBlob = await canvasToBlob(canvas, "image/jpeg", quality);
+  if (jpegBlob && await blobMatchesMimeType(jpegBlob, "image/jpeg")) {
+    return { blob: jpegBlob, width: outputWidth, height: outputHeight, mimeType: "image/jpeg" as const };
+  }
+  throw new Error("この端末でJPEG・WebP画像を作成できませんでした。別の画像またはブラウザでお試しください。");
 }
 
 export async function processImage(file: File, rotation: number, cropMode: CropMode): Promise<ProcessedImage> {
