@@ -1,6 +1,5 @@
 import "server-only";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
@@ -18,7 +17,6 @@ function getAdminApp() {
   return initializeApp({ projectId });
 }
 
-export function adminAuth() { return getAuth(getAdminApp()); }
 export function adminDb() { return getFirestore(getAdminApp()); }
 
 export async function verifyBearerToken(request: Request) {
