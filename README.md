@@ -32,7 +32,7 @@
 - Googleプロフィール表示、確認可能なログアウト、実使用量を表示するストレージ画面
 - IndexedDBのアップロード待ち一覧・個別再送・一括再送・確認付き破棄
 - 位置情報の利用可否、Drive保存後の端末コピー、ライト/ダーク/端末連動表示のユーザー別設定
-- GitHub Pages向け閲覧専用デモと、公式Pages Actionsによる自動デプロイworkflow
+- GitHub Pagesだけで動作する端末内図鑑と、公式Pages Actionsによる自動デプロイworkflow
 
 ## 一部実装・未実装
 
@@ -60,10 +60,10 @@ Next.js 16 App Router、React 19、TypeScript、Tailwind CSS 4、Firebase Authen
 GitHub Pagesは静的ホスティングのため、Firebase Admin、Gemini、Google Drive OAuthを使うRoute Handlerは実行できません。本リポジトリでは役割を明確に分けています。
 
 - `src/`: ログイン、AI判定、Drive保存を含むサーバー版
-- `pages-demo/`: サンプルデータだけを使う閲覧専用の公開デモ
+- `pages-demo/`: 撮影、手入力登録、IndexedDB保存、検索、お気に入り、削除、バックアップ・復元、PWAオフライン利用に対応する静的版
 - `.github/workflows/deploy-pages.yml`: `pages-demo/` と公開用画像をPages artifactへまとめてデプロイ
 
-GitHubでリポジトリの **Settings → Pages → Source** を **GitHub Actions** にし、`main` へpushすると公開されます。公開デモにはAPIキー、Firebase Admin秘密鍵、Drive OAuth tokenを一切含めません。サーバー版を一般公開する場合は、Node.js対応ホスティングとSecret Managerを別途使用してください。
+GitHubでリポジトリの **Settings → Pages → Source** を **GitHub Actions** にし、`main` へpushすると公開されます。静的版の写真・図鑑・設定はブラウザのIndexedDBとlocalStorageだけに保存され、外部サーバーへ送信しません。APIキー、Firebase Admin秘密鍵、Drive OAuth tokenも一切含めません。ブラウザのサイトデータを削除すると記録も消えるため、設定画面からJSONバックアップを定期的に書き出してください。Gemini正式判定とGoogle Drive保存を使うサーバー版は `src/` に残しています。
 
 ## Firebase設定
 

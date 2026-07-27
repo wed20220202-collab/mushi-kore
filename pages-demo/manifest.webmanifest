@@ -1,0 +1,11 @@
+{
+  "name": "むしコレ Local Edition",
+  "short_name": "むしコレ",
+  "description": "撮影した虫を端末内に保存する、自分だけの昆虫図鑑",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3e8",
+  "theme_color": "#173f35",
+  "icons": []
+}

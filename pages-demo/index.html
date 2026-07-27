@@ -4,53 +4,157 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="昆虫撮影・AI判別・図鑑管理Webアプリ むしコレの公開デモ">
-  <title>むしコレ | 公開デモ</title>
+  <meta name="description" content="撮影した虫を端末内に保存して、自分だけの図鑑を作れる静的Webアプリ">
+  <title>むしコレ | 端末内図鑑</title>
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="shell">
-    <header><a class="brand" href="#home" aria-label="むしコレ ホーム"><span>⌁</span>むしコレ</a><button class="avatar" data-open="profile" aria-label="プロフィールを表示">み</button></header>
-    <div class="demo-banner"><b>PUBLIC DEMO</b><span>GitHub Pages版は閲覧専用です</span></div>
+  <div class="app-shell">
+    <header class="app-header">
+      <button class="brand" data-tab="home" aria-label="ホームへ戻る"><span class="brand-mark">⌁</span>むしコレ</button>
+      <button class="avatar" data-tab="settings" aria-label="設定を開く" id="header-avatar">み</button>
+    </header>
+    <div class="local-banner"><strong>LOCAL EDITION</strong><span>写真と記録はこの端末だけに保存</span></div>
 
     <main id="home" class="view active">
-      <p class="eyebrow">GOOD AFTERNOON</p><h1 class="hello">こんにちは、みどりさん</h1>
-      <section class="hero"><p class="eyebrow">TODAY'S FIELD NOTE</p><h2>見つけた虫が、<br>わたしの図鑑になる。</h2><p>カメラを向けるだけ。AIと一緒に、今日の小さな発見を記録しよう。</p><button data-open="capture">📷 虫を撮影する</button></section>
-      <div class="stats"><article><small>SPECIES</small><strong>12</strong><span>見つけた種類</span></article><article><small>RECORDS</small><strong>28</strong><span>これまでの発見</span></article></div>
+      <p class="eyebrow">MY FIELD NOTE</p>
+      <h1 class="greeting">こんにちは、<span id="greeting-name">みどり</span>さん</h1>
+      <section class="hero">
+        <p class="eyebrow">PRIVATE BY DESIGN</p>
+        <h2>見つけた虫が、<br>わたしの図鑑になる。</h2>
+        <p>撮影、記録、検索まで端末内で完結。アカウントもサーバーも必要ありません。</p>
+        <button class="hero-action" data-open-capture>📷 虫を記録する</button>
+      </section>
+      <div class="stats">
+        <article><small>SPECIES</small><strong id="species-count">0</strong><span>見つけた種類</span></article>
+        <article><small>RECORDS</small><strong id="record-count">0</strong><span>端末内の記録</span></article>
+      </div>
       <div class="section-title"><h2>最近の発見</h2><button data-tab="collection">すべて見る →</button></div>
-      <div class="cards">
-        <button class="card" data-record="カブトムシ"><div class="photo kabuto"><b>✦ AI 96%</b></div><h3>カブトムシ</h3><i>Trypoxylus dichotomus</i><p>⌖ 高尾山　·　7月20日</p></button>
-        <button class="card" data-record="ナミアゲハ"><div class="photo ageha"><b>✦ AI 91%</b></div><h3>ナミアゲハ</h3><i>Papilio xuthus</i><p>⌖ 鎌倉市　·　7月18日</p></button>
+      <div id="recent-records" class="cards"></div>
+      <div id="home-empty" class="empty-state" hidden>
+        <span>🪲</span><strong>最初の虫を記録しよう</strong>
+        <p>写真と名前を登録すると、ここに図鑑カードが並びます。</p>
+        <button data-open-capture>記録をはじめる</button>
       </div>
     </main>
 
     <main id="collection" class="view">
-      <p class="eyebrow">MY FIELD GUIDE</p><h1>わたしの図鑑</h1>
-      <label class="search">⌕ <input id="search" type="search" placeholder="虫の名前で検索"></label>
-      <div class="chips"><button class="active">すべて</button><button>お気に入り</button><button>コウチュウ目</button><button>チョウ目</button></div>
-      <div class="grid" id="record-grid">
-        <button class="tile" data-name="カブトムシ" data-record="カブトムシ"><div class="photo kabuto"></div><h3>カブトムシ</h3><i>Trypoxylus dichotomus</i></button>
-        <button class="tile" data-name="ナミアゲハ" data-record="ナミアゲハ"><div class="photo ageha"></div><h3>ナミアゲハ</h3><i>Papilio xuthus</i></button>
-        <button class="tile" data-name="ヤマトタマムシ" data-record="ヤマトタマムシ"><div class="photo tamamushi"></div><h3>ヤマトタマムシ</h3><i>Chrysochroa fulgidissima</i></button>
+      <p class="eyebrow">MY FIELD GUIDE</p>
+      <h1>わたしの図鑑</h1>
+      <label class="search-box">⌕<input id="search-input" type="search" placeholder="名前・場所・メモで検索" autocomplete="off"></label>
+      <div class="filter-row">
+        <button class="filter active" data-filter="all">すべて</button>
+        <button class="filter" data-filter="favorite">お気に入り</button>
+        <button class="filter" data-filter="with-location">場所あり</button>
       </div>
+      <p class="result-count" id="result-count">0件の記録</p>
+      <div id="record-grid" class="record-grid"></div>
+      <div id="collection-empty" class="empty-state" hidden><span>⌕</span><strong>記録が見つかりません</strong><p>検索条件を変えるか、新しい虫を登録してください。</p></div>
     </main>
 
     <main id="settings" class="view">
-      <p class="eyebrow">YOUR APP</p><h1>設定</h1>
-      <section class="storage"><div><b>ストレージ</b><small>公開デモ · 保存なし</small></div><span>▣</span><i><b></b></i></section>
-      <div class="settings-list">
-        <button data-open="profile"><span>◯</span><div><b>アカウント</b><small>プロフィール・ログアウト</small></div><em>›</em></button>
-        <button data-open="uploads"><span>☁</span><div><b>オフライン保存</b><small>アップロード待ち 0件</small></div><em>›</em></button>
-        <button data-open="privacy"><span>♢</span><div><b>プライバシー</b><small>位置情報・データの管理</small></div><em>›</em></button>
-        <button data-open="display"><span>◐</span><div><b>表示</b><small>端末の設定に合わせる</small></div><em>›</em></button>
-      </div>
-      <p class="version">むしコレ v0.2.0 · GitHub Pages 公開デモ<br>AI判定・ログイン・保存はサーバー版で利用できます。</p>
+      <p class="eyebrow">YOUR APP</p>
+      <h1>設定</h1>
+      <section class="storage-card">
+        <div><strong>端末内ストレージ</strong><small id="storage-summary">計算中…</small></div><span>▣</span>
+        <div class="progress"><i id="storage-progress"></i></div>
+      </section>
+
+      <section class="settings-section">
+        <h2>プロフィール</h2>
+        <label class="field">表示名<input id="display-name" maxlength="20" placeholder="みどり"></label>
+        <p class="help">ログインはありません。この端末の画面表示にだけ使われます。</p>
+      </section>
+
+      <section class="settings-section">
+        <h2>撮影と表示</h2>
+        <div class="setting-row"><div><strong>位置情報を利用する</strong><small>登録時にボタンを押した場合だけ取得</small></div><button class="switch" id="location-switch" role="switch" aria-checked="true"><span></span></button></div>
+        <div class="theme-options" role="group" aria-label="表示テーマ">
+          <button data-theme-choice="system">端末</button><button data-theme-choice="light">ライト</button><button data-theme-choice="dark">ダーク</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>データ管理</h2>
+        <p class="help">ブラウザのサイトデータを削除すると図鑑も消えます。定期的にバックアップしてください。</p>
+        <button class="action-button" id="export-button">↓ バックアップを書き出す</button>
+        <label class="action-button file-action">↑ バックアップを読み込む<input id="import-input" type="file" accept="application/json"></label>
+        <button class="danger-button" id="clear-button">すべての端末内データを削除</button>
+      </section>
+
+      <section class="settings-section about">
+        <h2>この静的版について</h2>
+        <p>撮影画像や位置情報は外部サーバーへ送信しません。Gemini AI判定とGoogle Drive保存はサーバー版限定です。静的版では候補選択または手入力で図鑑を作成します。</p>
+      </section>
+      <p class="version">むしコレ Local Edition v1.0<br>GitHub Pages · オフライン対応</p>
     </main>
 
-    <nav><button data-tab="home" class="active">⌂<span>ホーム</span></button><button data-tab="collection">⌕<span>検索</span></button><button class="shoot" data-open="capture">📷<span>撮影</span></button><button data-tab="collection">▤<span>図鑑</span></button><button data-tab="settings">⚙<span>設定</span></button></nav>
+    <nav class="bottom-nav" aria-label="メインナビゲーション">
+      <button data-tab="home" class="active">⌂<span>ホーム</span></button>
+      <button data-tab="collection">⌕<span>検索</span></button>
+      <button class="capture-nav" data-open-capture>📷<span>記録</span></button>
+      <button data-tab="collection">▤<span>図鑑</span></button>
+      <button data-tab="settings">⚙<span>設定</span></button>
+    </nav>
   </div>
 
-  <div class="modal" id="modal" hidden><section role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="close" aria-label="閉じる">×</button><div id="modal-icon" class="modal-icon">⌁</div><p class="eyebrow" id="modal-label">PUBLIC DEMO</p><h2 id="modal-title"></h2><div id="modal-body"></div><button class="modal-ok close-action">閉じる</button></section></div>
+  <div class="sheet" id="capture-sheet" hidden>
+    <section role="dialog" aria-modal="true" aria-labelledby="capture-title">
+      <header class="sheet-header"><button class="icon-button" data-close-sheet aria-label="閉じる">×</button><div><p class="eyebrow">NEW DISCOVERY</p><h2 id="capture-title">虫を記録する</h2></div><span></span></header>
+      <form id="capture-form">
+        <label class="photo-picker" id="photo-picker">
+          <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required>
+          <span id="photo-placeholder">📷<strong>カメラで撮影・写真を選択</strong><small>JPEG / PNG / WebP · 10MBまで</small></span>
+          <img id="photo-preview" alt="登録する虫のプレビュー" hidden>
+        </label>
+        <div id="image-info" class="image-info" hidden></div>
+
+        <label class="field">候補から入力
+          <select id="species-preset">
+            <option value="">選択しない（手入力）</option>
+            <option value="カブトムシ|Japanese rhinoceros beetle|Trypoxylus dichotomus">カブトムシ</option>
+            <option value="ナミアゲハ|Asian swallowtail|Papilio xuthus">ナミアゲハ</option>
+            <option value="ヤマトタマムシ|Jewel beetle|Chrysochroa fulgidissima">ヤマトタマムシ</option>
+            <option value="オオカマキリ|Giant Asian mantis|Hierodula patellifera">オオカマキリ</option>
+            <option value="アキアカネ|Autumn darter|Sympetrum frequens">アキアカネ</option>
+          </select>
+        </label>
+        <div class="two-columns">
+          <label class="field">和名<input id="common-name" required maxlength="60" placeholder="例：カブトムシ"></label>
+          <label class="field">英名<input id="english-name" maxlength="80" placeholder="任意"></label>
+        </div>
+        <label class="field">学名<input id="scientific-name" maxlength="120" placeholder="任意"></label>
+        <label class="field">撮影場所
+          <div class="input-action"><input id="location-name" maxlength="100" placeholder="例：高尾山"><button type="button" id="location-button">現在地</button></div>
+        </label>
+        <input id="latitude" type="hidden"><input id="longitude" type="hidden">
+        <label class="field">メモ<textarea id="memo" maxlength="500" placeholder="見つけたときの様子など"></textarea></label>
+        <label class="field">タグ<input id="tags" maxlength="120" placeholder="夏、雑木林、夜"></label>
+        <p class="form-error" id="capture-error" role="alert"></p>
+        <button class="primary-button" type="submit">図鑑へ登録する</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="sheet detail-sheet" id="detail-sheet" hidden>
+    <article role="dialog" aria-modal="true" aria-labelledby="detail-name">
+      <button class="detail-close" data-close-detail aria-label="閉じる">×</button>
+      <div class="detail-photo"><img id="detail-image" alt=""></div>
+      <div class="detail-content">
+        <p class="eyebrow">LOCAL RECORD</p><h2 id="detail-name"></h2><i id="detail-scientific"></i>
+        <div class="detail-tags" id="detail-tags"></div>
+        <dl>
+          <div><dt>撮影日時</dt><dd id="detail-date"></dd></div>
+          <div><dt>撮影場所</dt><dd id="detail-location"></dd></div>
+        </dl>
+        <p id="detail-memo" class="detail-memo"></p>
+        <div class="detail-actions"><button id="favorite-button">♡ お気に入り</button><button id="delete-button" class="danger-button">削除</button></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./app.js"></script>
 </body>
 </html>
