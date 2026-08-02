@@ -18,6 +18,7 @@ import type { IdentificationInput } from "@/lib/identification-types";
 import { SettingsView } from "@/components/settings-view";
 import { TutorialView } from "@/components/tutorial-view";
 import { applyPreferences, readLocalPreferences } from "@/lib/firebase/preferences";
+import { PlanUsageCard } from "@/components/plan-usage-card";
 
 type Tab = "home" | "collection" | "search" | "settings" | "capture" | "identify";
 
@@ -113,6 +114,7 @@ function HomeView({ user, records, openRecord, goCollection, goCapture }: { user
         <p>カメラを向けるだけ。AIと一緒に、今日の小さな発見を記録しよう。</p>
         <button className="capture" onClick={goCapture}><Camera size={20} />虫を撮影する</button>
       </section>
+      <PlanUsageCard user={user} />
       <div className="stats">
         <div className="stat"><div className="stat-top"><span className="eyebrow">SPECIES</span><Leaf size={18} /></div><strong>{speciesCount}</strong><small>見つけた種類</small></div>
         <div className="stat"><div className="stat-top"><span className="eyebrow">RECORDS</span><Compass size={18} /></div><strong>{records.length}</strong><small>これまでの発見</small></div>

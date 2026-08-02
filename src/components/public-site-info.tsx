@@ -15,7 +15,7 @@ export function PublicSiteInfo() {
       <article><ShieldCheck size={22} /><div><strong>プライバシーに配慮</strong><p>位置情報は任意で、AI判定には送信しません。人物や住所が写る写真は使用しないでください。</p></div></article>
     </div>
     <AdBanner />
-    <nav className="site-links" aria-label="サイト情報"><Link href="/about">むしコレについて</Link><Link href="/privacy">プライバシー</Link><Link href="/terms">利用規約</Link><Link href="/contact">お問い合わせ</Link></nav>
+    <nav className="site-links" aria-label="サイト情報"><Link href="/pricing">料金プラン</Link><Link href="/about">むしコレについて</Link><Link href="/privacy">プライバシー</Link><Link href="/terms">利用規約</Link><Link href="/contact">お問い合わせ</Link></nav>
     <small className="copyright">© 2026 むしコレ</small>
   </aside>;
 }
