@@ -15,7 +15,7 @@ import { uploadRecordImage } from "@/lib/firebase/drive-upload";
 
 type FlowStatus = "review" | "analyzing" | "result" | "confirm" | "saving" | "success" | "error";
 
-export function IdentificationFlow({ input, user, onBack, onComplete }: { input: IdentificationInput; user: User; onBack: () => void; onComplete: () => void }) {
+export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }: { input: IdentificationInput; user: User | null; onBack: () => void; onComplete: () => void; onLogin: () => Promise<void> }) {
   const [status, setStatus] = useState<FlowStatus>("review");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<InsectIdentificationResult | null>(null);
@@ -38,10 +38,11 @@ export function IdentificationFlow({ input, user, onBack, onComplete }: { input:
     setProgress(8);
     const timer = window.setInterval(() => setProgress((value) => Math.min(88, value + Math.max(2, Math.round((90 - value) / 6)))), 240);
     try {
-      const token = await user.getIdToken();
       const formData = new FormData();
       formData.append("image", new File([input.image.blob], input.fileName, { type: input.image.mimeType }));
-      const response = await fetch("/api/identify", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const headers: HeadersInit = {};
+      if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
+      const response = await fetch("/api/identify", { method: "POST", headers, body: formData });
       const payload: unknown = await response.json();
       if (!response.ok || typeof payload !== "object" || payload === null || !("result" in payload)) {
         const message = typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string" ? payload.error : "AI判定を完了できませんでした。";
@@ -62,7 +63,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete }: { input:
   }
 
   async function register() {
-    if (!result) return;
+    if (!result || !user) return;
     setStatus("saving");
     setError("");
     try {
@@ -78,7 +79,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete }: { input:
   }
 
   async function uploadToDrive(id = recordId) {
-    if (!id) return;
+    if (!id || !user) return;
     setDriveState("uploading");
     setDriveMessage("");
     try {
@@ -132,7 +133,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete }: { input:
           <div className="result-panel"><h2>特徴と生息環境</h2><p>{result.appearance}</p><p>{result.habitat} · {result.activeSeason}</p></div>
           <div className="warning-panel"><ShieldAlert size={20} /><div><strong>安全について</strong><p>{result.toxicity} AI判定は医療的・生物学的な確定診断ではありません。</p></div></div>
           <h2 className="subheading">ほかの候補</h2><div className="candidate-list">{result.candidates.slice(1).map((candidate) => <button key={candidate.scientificName} onClick={() => setResult({ ...result, commonNameJa: candidate.commonNameJa, commonNameEn: candidate.commonNameEn, scientificName: candidate.scientificName, confidence: candidate.confidence })}><span><strong>{candidate.commonNameJa}</strong><i>{candidate.scientificName}</i></span><b>{Math.round(candidate.confidence * 100)}%</b></button>)}</div>
-          <button className="capture-next" onClick={() => setStatus("confirm")}><Check size={20} />内容を確認して登録</button>
+          {user ? <button className="capture-next" onClick={() => setStatus("confirm")}><Check size={20} />内容を確認して登録</button> : <div className="guest-result"><strong>判定結果を図鑑へ残しますか？</strong><p>Googleログインすると、この結果を自分の図鑑とGoogle Driveへ保存できます。</p><button className="capture-next" onClick={() => void onLogin()}>Googleでログインして保存</button><button className="capture-secondary" onClick={onComplete}>保存せずホームへ戻る</button></div>}
           <button className="capture-secondary" onClick={identify}><RefreshCw size={17} />AIで再判定する</button>
         </>}
       </section>}

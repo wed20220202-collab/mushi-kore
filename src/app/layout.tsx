@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const notoSans = Noto_Sans_JP({
@@ -7,10 +8,18 @@ const notoSans = Noto_Sans_JP({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.APP_BASE_URL ?? "https://mushi-kore.vercel.app";
+const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+
 export const metadata: Metadata = {
-  title: "むしコレ | 見つけた虫が、わたしの図鑑になる",
-  description: "スマートフォンで虫を撮影し、AIで判別して自分だけの昆虫図鑑を育てるWebアプリ",
+  metadataBase: new URL(siteUrl),
+  title: { default: "むしコレ | 写真で虫をAI判定", template: "%s | むしコレ" },
+  description: "スマートフォンで虫を撮影し、AIで種類の候補や特徴を調べられる無料Webアプリ。ログインすると自分だけの昆虫図鑑も作れます。",
   applicationName: "むしコレ",
+  alternates: { canonical: "/" },
+  openGraph: { title: "むしコレ | 写真で虫をAI判定", description: "撮る。知る。集める。無料で試せる昆虫AI判定Webアプリ。", url: "/", siteName: "むしコレ", locale: "ja_JP", type: "website" },
+  robots: { index: true, follow: true },
+  ...(adsenseClient ? { other: { "google-adsense-account": adsenseClient } } : {}),
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "むしコレ", statusBarStyle: "black-translucent" },
 };
@@ -25,7 +34,10 @@ export default function RootLayout({
       lang="ja"
       className={`${notoSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        {adsenseClient && <Script id="google-adsense" async strategy="afterInteractive" crossOrigin="anonymous" src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsenseClient)}`} />}
+      </body>
     </html>
   );
 }

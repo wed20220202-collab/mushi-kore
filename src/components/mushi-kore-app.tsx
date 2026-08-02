@@ -23,6 +23,11 @@ type Tab = "home" | "collection" | "search" | "settings" | "capture" | "identify
 
 const AUTH_STATE_TIMEOUT_MS = 8_000;
 const PROFILE_TIMEOUT_MS = 10_000;
+const GUEST_ACCESS_KEY = "mushi-kore:guest-access";
+
+function hasGuestAccess() {
+  return typeof window !== "undefined" && window.localStorage.getItem(GUEST_ACCESS_KEY) === "accepted";
+}
 
 function getDisplayName(user: User | null) {
   return user?.displayName?.trim() || user?.email?.split("@")[0] || "ゲスト";
@@ -211,7 +216,7 @@ export function MushiKoreApp() {
       setUser(currentUser);
       if (!currentUser) {
         setRecords([]);
-        setStage("login");
+        setStage(hasGuestAccess() ? "app" : "login");
         setAuthReady(true);
         return;
       }
@@ -276,6 +281,10 @@ export function MushiKoreApp() {
     try { await signInWithPopup(firebaseAuth, googleProvider); }
     catch { setLoginError("ログインを完了できませんでした。もう一度お試しください。"); }
   }
+  function continueAsGuest() {
+    setLoginError("");
+    setStage("consent");
+  }
   async function acceptAndContinue() {
     const box = document.querySelector<HTMLInputElement>("#consent");
     if (!box?.checked) return;
@@ -289,6 +298,7 @@ export function MushiKoreApp() {
   async function finishTutorial() {
     try {
       if (user) await completeTutorial(user.uid);
+      else window.localStorage.setItem(GUEST_ACCESS_KEY, "accepted");
     } finally {
       setStage("app");
     }
@@ -303,10 +313,10 @@ export function MushiKoreApp() {
     setStage("login");
   }
   if (!authReady) return <div className="phone-shell"><main className="empty-note" style={{ paddingTop: "45dvh" }}>ログイン状態を確認しています…</main></div>;
-  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><p className="legal">ログイン後、初回のみ使い方をご案内します。続行すると利用規約とプライバシーポリシーをご確認いただけます。</p></div></section></div>;
+  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><button className="guest-button" onClick={continueAsGuest}>ログインせず無料で試す</button><p className="legal">ゲストは1日1回AI判定を利用できます。ログインすると図鑑保存が利用できます。続行前に利用規約とプライバシーポリシーをご確認ください。</p></div></section></div>;
   if (stage === "consent") return <div className="phone-shell"><main className="content" style={{ paddingTop:50 }}><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><div className="eyebrow" style={{ marginTop:60 }}>BEFORE WE START</div><h1 style={{ fontSize:"2rem", letterSpacing:"-.05em" }}>安心して図鑑を育てるために</h1><div className="info-panel"><h3>利用規約</h3><p>Gemini APIの開発テストは18歳以上の方だけが利用できます。AI判定は確定診断ではありません。</p></div><div className="info-panel"><h3>プライバシー</h3><p>画像は製作者管理の非公開Google Driveへ保存され、判定時は無料版Gemini APIへ送信されます。送信内容がGoogleのサービス改善や人による確認に使われる可能性があるため、人物・住所などの個人情報が写る画像は使用しないでください。位置情報はAIへ送りません。</p></div><label style={{ display:"flex", gap:10, marginTop:22, lineHeight:1.6 }}><input type="checkbox" required id="consent" />18歳以上であり、利用規約とプライバシーポリシーに同意します</label><button className="capture" style={{ width:"100%", justifyContent:"center", marginTop:24 }} onClick={acceptAndContinue}>同意してはじめる</button></main></div>;
   if (stage === "tutorial") return <div className="phone-shell"><TutorialView displayName={getDisplayName(user)} onComplete={finishTutorial} /></div>;
-  if (tab === "identify" && identificationInput && user) return <div className="phone-shell"><IdentificationFlow input={identificationInput} user={user} onBack={() => setTab("capture")} onComplete={() => { setIdentificationInput(null); setTab("home"); }} /></div>;
-  if (tab === "capture") return <div className="phone-shell"><CaptureFlow onClose={() => setTab("home")} onIdentify={(input) => { if (!user) { setLoginError("AI判定にはGoogleログインが必要です。"); setStage("login"); setTab("home"); return; } setIdentificationInput(input); setTab("identify"); }} /></div>;
-  return <div className="phone-shell"><Header user={user} />{tab==="home"&&<HomeView user={user} records={records} openRecord={setSelected} goCollection={() => setTab("collection")} goCapture={() => setTab("capture")} />}{tab==="collection"&&<CollectionView records={records} openRecord={setSelected} goCapture={() => setTab("capture")} />}{tab==="search"&&<SearchView records={records} openRecord={setSelected} />}{tab==="settings"&&<SettingsView user={user} onLogout={logout} />}<BottomNav tab={tab} setTab={setTab} />{selected&&<Detail record={selected} close={() => setSelected(null)} />}</div>;
+  if (tab === "identify" && identificationInput) return <div className="phone-shell"><IdentificationFlow input={identificationInput} user={user} onLogin={login} onBack={() => setTab("capture")} onComplete={() => { setIdentificationInput(null); setTab("home"); }} /></div>;
+  if (tab === "capture") return <div className="phone-shell"><CaptureFlow onClose={() => setTab("home")} onIdentify={(input) => { setIdentificationInput(input); setTab("identify"); }} /></div>;
+  return <div className="phone-shell"><Header user={user} />{tab==="home"&&<HomeView user={user} records={records} openRecord={setSelected} goCollection={() => setTab("collection")} goCapture={() => setTab("capture")} />}{tab==="collection"&&<CollectionView records={records} openRecord={setSelected} goCapture={() => setTab("capture")} />}{tab==="search"&&<SearchView records={records} openRecord={setSelected} />}{tab==="settings"&&<SettingsView user={user} onLogout={logout} onLogin={login} />}<BottomNav tab={tab} setTab={setTab} />{selected&&<Detail record={selected} close={() => setSelected(null)} />}</div>;
 }

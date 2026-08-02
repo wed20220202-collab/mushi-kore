@@ -25,7 +25,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 }
 
-export function SettingsView({ user, onLogout }: { user: User | null; onLogout: () => Promise<void> }) {
+export function SettingsView({ user, onLogout, onLogin }: { user: User | null; onLogout: () => Promise<void>; onLogin: () => Promise<void> }) {
   const [panel, setPanel] = useState<Panel>("root");
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
   const [pending, setPending] = useState<PendingUpload[]>([]);
@@ -138,10 +138,9 @@ export function SettingsView({ user, onLogout }: { user: User | null; onLogout: 
     </>}
 
     {panel === "account" && <section className="settings-panel">
-      <div className="profile-card"><div className="profile-avatar" style={user?.photoURL ? { backgroundImage: `url('${user.photoURL}')` } : undefined}>{user?.photoURL ? "" : (user?.displayName?.charAt(0) || "み")}</div><div><strong>{user?.displayName || "デモユーザー"}</strong><small>{user?.email || "サンプル表示中"}</small></div></div>
-      <div className="settings-note">プロフィール名と画像はGoogleアカウントから取得しています。変更はGoogleアカウント側で行ってください。</div>
-      <button className="danger-button" onClick={() => void onLogout()} disabled={!user}><LogOut size={18} />ログアウト</button>
-      {!user && <p className="form-message">デモ表示ではログアウト操作はありません。</p>}
+      <div className="profile-card"><div className="profile-avatar" style={user?.photoURL ? { backgroundImage: `url('${user.photoURL}')` } : undefined}>{user?.photoURL ? "" : (user?.displayName?.charAt(0) || "ゲ")}</div><div><strong>{user?.displayName || "ゲスト"}</strong><small>{user?.email || "ログインなしで利用中"}</small></div></div>
+      <div className="settings-note">{user ? "プロフィール名と画像はGoogleアカウントから取得しています。変更はGoogleアカウント側で行ってください。" : "ログインすると判定結果を自分の図鑑とGoogle Driveへ保存できます。"}</div>
+      {user ? <button className="danger-button" onClick={() => void onLogout()}><LogOut size={18} />ログアウト</button> : <button className="primary-setting-button" onClick={() => void onLogin()}>Googleでログイン</button>}
     </section>}
 
     {panel === "uploads" && <section className="settings-panel">
