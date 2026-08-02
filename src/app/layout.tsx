@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const notoSans = Noto_Sans_JP({
@@ -36,7 +35,6 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         {children}
-        {adsenseClient && <Script id="google-adsense" async strategy="afterInteractive" crossOrigin="anonymous" src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsenseClient)}`} />}
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Camera, Leaf, ScanSearch, ShieldCheck } from "lucide-react";
-import { AdBanner } from "@/components/ad-banner";
+import { AccountAwareAdBanner } from "@/components/ad-banner";
 
 export function PublicSiteInfo() {
   return <aside className="public-info">
@@ -14,8 +14,8 @@ export function PublicSiteInfo() {
       <article><Leaf size={22} /><div><strong>自分だけの昆虫図鑑</strong><p>Googleログインすると、判定結果や撮影メモを自分の図鑑へ保存できます。</p></div></article>
       <article><ShieldCheck size={22} /><div><strong>プライバシーに配慮</strong><p>位置情報は任意で、AI判定には送信しません。人物や住所が写る写真は使用しないでください。</p></div></article>
     </div>
-    <AdBanner />
-    <nav className="site-links" aria-label="サイト情報"><Link href="/pricing">料金プラン</Link><Link href="/about">むしコレについて</Link><Link href="/privacy">プライバシー</Link><Link href="/terms">利用規約</Link><Link href="/contact">お問い合わせ</Link></nav>
+    <AccountAwareAdBanner />
+    <nav className="site-links" aria-label="サイト情報"><Link href="/pricing">料金プラン</Link><Link href="/about">むしコレについて</Link><Link href="/privacy">プライバシー</Link><Link href="/terms">利用規約</Link><Link href="/commerce">特定商取引法に基づく表記</Link><Link href="/contact">お問い合わせ</Link></nav>
     <small className="copyright">© 2026 むしコレ</small>
   </aside>;
 }

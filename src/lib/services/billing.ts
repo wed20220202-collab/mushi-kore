@@ -3,12 +3,16 @@ import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { currentUsagePeriod, getPlan, isPlanId, type SubscriptionPlan } from "@/lib/plans";
 
-const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+const PAID_ENTITLEMENT_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+export function hasPaidEntitlementStatus(status: unknown) {
+  return PAID_ENTITLEMENT_STATUSES.has(String(status));
+}
 
 export async function resolveUserPlan(uid: string): Promise<SubscriptionPlan> {
   const snapshot = await adminDb().doc(`billingCustomers/${uid}`).get();
   const data = snapshot.data();
-  if (!data || !ACTIVE_SUBSCRIPTION_STATUSES.has(String(data.status)) || !isPlanId(data.planId)) return getPlan("free");
+  if (!data || !hasPaidEntitlementStatus(data.status) || !isPlanId(data.planId)) return getPlan("free");
   return getPlan(data.planId);
 }
 

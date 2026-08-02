@@ -2,7 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { createHmac } from "node:crypto";
 import { adminDb, verifyBearerToken } from "@/lib/firebase/admin";
 import { hasValidImageSignature } from "@/lib/image-signature";
-import { currentUsagePeriod } from "@/lib/plans";
+import { currentUsagePeriod, GUEST_DAILY_IMAGE_LIMIT } from "@/lib/plans";
 import { createIdentificationProvider } from "@/lib/services/ai";
 import { resolveUserPlan } from "@/lib/services/billing";
 
@@ -68,7 +68,7 @@ async function resolveRequester(request: Request) {
     accountType: "guest" as const,
     planId: "guest",
     quotaPeriod: new Date().toISOString().slice(0, 10),
-    quotaLimit: Number(process.env.MAX_DAILY_GUEST_AI_IDENTIFICATIONS ?? 1),
+    quotaLimit: GUEST_DAILY_IMAGE_LIMIT,
     minuteLimit: 1,
   };
 }

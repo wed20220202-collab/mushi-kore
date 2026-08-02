@@ -378,8 +378,13 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .pricing-card ul { display:grid; gap:8px; min-height:102px; padding:0; margin:18px 0; list-style:none; }
 .pricing-card li { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:.7rem; }
 .pricing-card li svg { color:var(--leaf); flex:0 0 auto; }
-.plan-button { display:flex; justify-content:center; margin-top:auto; padding:11px 12px; border-radius:999px; background:var(--forest); color:white; text-decoration:none; font-size:.75rem; font-weight:900; }
+.plan-button { display:flex; width:100%; justify-content:center; margin-top:auto; padding:11px 12px; border:0; border-radius:999px; background:var(--forest); color:white; text-decoration:none; font:inherit; font-size:.75rem; font-weight:900; cursor:pointer; }
+.plan-button:disabled { opacity:.65; cursor:wait; }
 .plan-button.disabled { background:#dfe4dc; color:#79827c; cursor:not-allowed; }
+.billing-error { display:block; margin-top:7px; color:#9f2f20; font-size:.68rem; line-height:1.45; }
+.billing-portal-action { max-width:280px; margin-top:14px; }
+.test-billing-notice { display:flex; max-width:900px; margin:0 auto 24px; padding:14px 18px; gap:12px; align-items:center; border:2px solid #b3541e; border-radius:16px; background:#fff2df; color:#70320d; font-size:.78rem; line-height:1.6; }
+.test-billing-notice b { flex:0 0 auto; padding:3px 8px; border-radius:999px; background:#b3541e; color:white; font-size:.68rem; letter-spacing:.08em; }
 .pricing-note { max-width:760px; margin:30px auto 0; padding:20px; border-radius:20px; background:#f2e4d2; }
 .pricing-note h2 { margin:0 0 7px; font-size:1rem; }
 .pricing-note p { margin:0; color:#765b47; font-size:.78rem; line-height:1.8; }
