@@ -356,7 +356,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 @keyframes pulse { from { transform:scale(.7); opacity:.7; } to { transform:scale(1.4); opacity:0; } }
 @media (min-width:900px) {
   .public-site { display:grid; grid-template-columns:520px minmax(0,1fr); gap:clamp(30px,5vw,70px); align-items:start; padding:20px 24px; }
-  .public-info { position:sticky; top:0; grid-column:2; grid-row:1; max-height:100dvh; overflow:auto; padding:44px 0; }
+  .public-info { grid-column:2; grid-row:1; padding:44px 0; }
   .public-site #app { grid-column:1; grid-row:1; }
   .public-site .phone-shell { margin-top:0; }
   .public-site .bottom-nav { left:max(284px,calc((100vw - 1180px) / 2 + 284px)); }
