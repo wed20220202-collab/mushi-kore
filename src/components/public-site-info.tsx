@@ -10,7 +10,7 @@ export function PublicSiteInfo() {
     <p className="public-lead">スマートフォンで撮影した虫をAIが解析し、名前の候補、見分けた理由、生息環境や注意点をわかりやすく表示します。</p>
     <a className="public-cta" href="#app"><Camera size={19} />無料でAI判定を試す</a>
     <div className="public-features">
-      <article><ScanSearch size={22} /><div><strong>写真でAI判定</strong><p>ゲストはログインなしで1日1回無料。AIの結果は参考情報としてご利用ください。</p></div></article>
+      <article><ScanSearch size={22} /><div><strong>写真でAI判定</strong><p>ゲストもログインなしで回数無制限・無料。AIの結果は参考情報としてご利用ください。</p></div></article>
       <article><Leaf size={22} /><div><strong>自分だけの昆虫図鑑</strong><p>Googleログインすると、判定結果や撮影メモを自分の図鑑へ保存できます。</p></div></article>
       <article><ShieldCheck size={22} /><div><strong>プライバシーに配慮</strong><p>位置情報は任意で、AI判定には送信しません。人物や住所が写る写真は使用しないでください。</p></div></article>
     </div>

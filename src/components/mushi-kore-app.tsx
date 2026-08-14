@@ -6,12 +6,12 @@ import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import {
   BookOpen, Camera, Compass,
   Heart, Home, Leaf, MapPin, Search, Settings,
-  Sparkles, Sun, X, Zap,
+  LoaderCircle, Pencil, Save, Sparkles, Sun, Trash2, X, Zap,
 } from "lucide-react";
 import type { InsectRecord } from "@/lib/types";
 import { firebaseAuth, googleProvider, isFirebaseConfigured } from "@/lib/firebase/client";
 import { acceptPolicies, completeTutorial, initializeUserProfile } from "@/lib/firebase/users";
-import { loadRecordImageUrl, subscribeUserRecords } from "@/lib/firebase/records";
+import { deleteUserRecord, loadRecordImageUrl, subscribeUserRecords, updateUserRecord } from "@/lib/firebase/records";
 import { CaptureFlow } from "@/components/capture-flow";
 import { IdentificationFlow } from "@/components/identification-flow";
 import type { IdentificationInput } from "@/lib/identification-types";
@@ -165,16 +165,103 @@ function SearchView({ records, openRecord }: { records: InsectRecord[]; openReco
   );
 }
 
-function Detail({ record, close }: { record: InsectRecord; close: () => void }) {
+function toLocalDateTimeValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function Detail({ record, user, close }: { record: InsectRecord; user: User; close: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState<"" | "saving" | "deleting">("");
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState(() => ({
+    commonNameJa: record.commonNameJa,
+    commonNameEn: record.commonNameEn,
+    scientificName: record.scientificName,
+    order: record.order,
+    family: record.family,
+    genus: record.genus,
+    capturedAt: toLocalDateTimeValue(record.capturedAt),
+    locationName: record.locationName,
+    memo: record.memo,
+    tagsText: record.tags.join("、"),
+    favorite: record.favorite,
+  }));
+
+  function updateField<K extends keyof typeof fields>(key: K, value: (typeof fields)[K]) {
+    setFields((current) => ({ ...current, [key]: value }));
+  }
+
+  async function save() {
+    if (!fields.commonNameJa.trim() || !fields.capturedAt) return;
+    setBusy("saving");
+    setError("");
+    try {
+      await updateUserRecord(user, record.id, {
+        commonNameJa: fields.commonNameJa,
+        commonNameEn: fields.commonNameEn,
+        scientificName: fields.scientificName,
+        order: fields.order,
+        family: fields.family,
+        genus: fields.genus,
+        capturedAt: new Date(fields.capturedAt).toISOString(),
+        locationName: fields.locationName,
+        memo: fields.memo,
+        tags: fields.tagsText.split(/[、,\s]+/).map((tag) => tag.trim()).filter(Boolean).slice(0, 10),
+        favorite: fields.favorite,
+      });
+      close();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "記録を更新できませんでした。");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`「${record.commonNameJa}」を図鑑から削除しますか？\nGoogle Driveの画像もゴミ箱へ移動します。この操作は元に戻せません。`)) return;
+    setBusy("deleting");
+    setError("");
+    try {
+      await deleteUserRecord(user, record.id);
+      close();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "記録を削除できませんでした。");
+    } finally {
+      setBusy("");
+    }
+  }
+
   return <div className="detail-overlay" role="dialog" aria-modal="true" aria-label={`${record.commonNameJa}の詳細`} onClick={(e) => e.target===e.currentTarget && close()}>
     <article className="detail">
-      <div className="detail-hero" style={{ backgroundImage:`linear-gradient(180deg,transparent 60%,rgba(4,17,13,.5)),url('${record.imageUrl}')` }}><button className="close" onClick={close} aria-label="閉じる"><X size={22} /></button></div>
-      <div className="detail-content"><div className="eyebrow">IDENTIFIED · AI {Math.round(record.confidence*100)}%</div><h2>{record.commonNameJa}</h2><div className="latin">{record.commonNameEn} · {record.scientificName}</div>
+      <div className="detail-hero" style={{ backgroundImage:`linear-gradient(180deg,transparent 60%,rgba(4,17,13,.5)),url('${record.imageUrl}')` }}><button className="close" onClick={close} aria-label="閉じる" disabled={Boolean(busy)}><X size={22} /></button></div>
+      <div className="detail-content">{editing ? <>
+        <div className="eyebrow">EDIT FIELD NOTE</div><h2>図鑑を編集</h2>
+        <div className="form-grid detail-edit-form">
+          <label>和名<input value={fields.commonNameJa} onChange={(event) => updateField("commonNameJa", event.target.value)} maxLength={100} required /></label>
+          <label>英名<input value={fields.commonNameEn} onChange={(event) => updateField("commonNameEn", event.target.value)} maxLength={120} /></label>
+          <label className="full">学名<input value={fields.scientificName} onChange={(event) => updateField("scientificName", event.target.value)} maxLength={160} /></label>
+          <label>目<input value={fields.order} onChange={(event) => updateField("order", event.target.value)} maxLength={100} /></label>
+          <label>科<input value={fields.family} onChange={(event) => updateField("family", event.target.value)} maxLength={100} /></label>
+          <label className="full">属<input value={fields.genus} onChange={(event) => updateField("genus", event.target.value)} maxLength={100} /></label>
+          <label className="full">撮影日時<input type="datetime-local" value={fields.capturedAt} onChange={(event) => updateField("capturedAt", event.target.value)} required /></label>
+          <label className="full">撮影場所<input value={fields.locationName} onChange={(event) => updateField("locationName", event.target.value)} maxLength={200} /></label>
+          <label className="full">メモ<textarea value={fields.memo} onChange={(event) => updateField("memo", event.target.value)} maxLength={1500} /></label>
+          <label className="full">タグ<input value={fields.tagsText} onChange={(event) => updateField("tagsText", event.target.value)} placeholder="夏、雑木林、夜" /></label>
+          <label className="full favorite-toggle"><input type="checkbox" checked={fields.favorite} onChange={(event) => updateField("favorite", event.target.checked)} />お気に入りに登録</label>
+        </div>
+        {error && <p className="detail-error" role="alert">{error}</p>}
+        <div className="detail-actions"><button className="detail-primary" onClick={() => void save()} disabled={Boolean(busy) || !fields.commonNameJa.trim() || !fields.capturedAt}>{busy === "saving" ? <LoaderCircle className="spin" size={18} /> : <Save size={18} />}保存する</button><button className="detail-secondary" onClick={() => { setEditing(false); setError(""); }} disabled={Boolean(busy)}>キャンセル</button></div>
+      </> : <><div className="eyebrow">IDENTIFIED · AI {Math.round(record.confidence*100)}%</div><h2>{record.commonNameJa}</h2><div className="latin">{record.commonNameEn} · {record.scientificName}</div>
         <div className="badge-row"><span className="badge">{record.order}</span><span className="badge">{record.family}</span>{record.tags.map((t) => <span className="badge" key={t}>#{t}</span>)}</div>
         <div className="info-panel"><h3>この虫について</h3><p>{record.description}</p></div>
         <div className="info-panel"><h3>AIの判別理由</h3><p>{record.identificationReason}<br /><small>※ AIの判定は確定診断ではありません。</small></p></div>
         <div className="info-panel"><h3>発見メモ</h3><p><MapPin size={14} style={{ display:"inline", marginRight:6 }} />{record.locationName}<br />{new Date(record.capturedAt).toLocaleString("ja-JP")}<br /><br />{record.memo}</p></div>
-      </div>
+        {error && <p className="detail-error" role="alert">{error}</p>}
+        <div className="detail-actions"><button className="detail-primary" onClick={() => setEditing(true)} disabled={Boolean(busy)}><Pencil size={18} />編集する</button><button className="detail-danger" onClick={() => void remove()} disabled={Boolean(busy)}>{busy === "deleting" ? <LoaderCircle className="spin" size={18} /> : <Trash2 size={18} />}削除する</button></div>
+      </>}</div>
     </article>
   </div>;
 }
@@ -315,10 +402,10 @@ export function MushiKoreApp() {
     setStage("login");
   }
   if (!authReady) return <div className="phone-shell"><main className="empty-note" style={{ paddingTop: "45dvh" }}>ログイン状態を確認しています…</main></div>;
-  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><button className="guest-button" onClick={continueAsGuest}>ログインせず無料で試す</button><p className="legal">ゲストは1日1回AI判定を利用できます。ログインすると図鑑保存が利用できます。続行前に利用規約とプライバシーポリシーをご確認ください。</p></div></section></div>;
+  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><button className="guest-button" onClick={continueAsGuest}>ログインせず無料で試す</button><p className="legal">AI判定はゲストも回数無制限・無料です。ログインすると図鑑の保存・編集・削除が利用できます。続行前に利用規約とプライバシーポリシーをご確認ください。</p></div></section></div>;
   if (stage === "consent") return <div className="phone-shell"><main className="content" style={{ paddingTop:50 }}><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><div className="eyebrow" style={{ marginTop:60 }}>BEFORE WE START</div><h1 style={{ fontSize:"2rem", letterSpacing:"-.05em" }}>安心して図鑑を育てるために</h1><div className="info-panel"><h3>利用規約</h3><p>むしコレは18歳以上の方が利用できます。AI判定は確定診断ではありません。</p></div><div className="info-panel"><h3>プライバシー</h3><p>判定時に画像をGemini APIへ送信します。Googleログイン後に図鑑へ登録した画像だけが、製作者管理の非公開Google Driveへ保存されます。人物・住所などの個人情報が写る画像は使用しないでください。位置情報はAIへ送りません。</p></div><label style={{ display:"flex", gap:10, marginTop:22, lineHeight:1.6 }}><input type="checkbox" required id="consent" />18歳以上であり、利用規約とプライバシーポリシーに同意します</label><button className="capture" style={{ width:"100%", justifyContent:"center", marginTop:24 }} onClick={acceptAndContinue}>同意してはじめる</button></main></div>;
   if (stage === "tutorial") return <div className="phone-shell"><TutorialView displayName={getDisplayName(user)} onComplete={finishTutorial} /></div>;
   if (tab === "identify" && identificationInput) return <div className="phone-shell"><IdentificationFlow input={identificationInput} user={user} onLogin={login} onBack={() => setTab("capture")} onComplete={() => { setIdentificationInput(null); setTab("home"); }} /></div>;
   if (tab === "capture") return <div className="phone-shell"><CaptureFlow onClose={() => setTab("home")} onIdentify={(input) => { setIdentificationInput(input); setTab("identify"); }} /></div>;
-  return <div className="phone-shell"><Header user={user} />{tab==="home"&&<HomeView user={user} records={records} openRecord={setSelected} goCollection={() => setTab("collection")} goCapture={() => setTab("capture")} />}{tab==="collection"&&<CollectionView records={records} openRecord={setSelected} goCapture={() => setTab("capture")} />}{tab==="search"&&<SearchView records={records} openRecord={setSelected} />}{tab==="settings"&&<SettingsView user={user} onLogout={logout} onLogin={login} />}<BottomNav tab={tab} setTab={setTab} />{selected&&<Detail record={selected} close={() => setSelected(null)} />}</div>;
+  return <div className="phone-shell"><Header user={user} />{tab==="home"&&<HomeView user={user} records={records} openRecord={setSelected} goCollection={() => setTab("collection")} goCapture={() => setTab("capture")} />}{tab==="collection"&&<CollectionView records={records} openRecord={setSelected} goCapture={() => setTab("capture")} />}{tab==="search"&&<SearchView records={records} openRecord={setSelected} />}{tab==="settings"&&<SettingsView user={user} onLogout={logout} onLogin={login} />}<BottomNav tab={tab} setTab={setTab} />{selected&&user&&<Detail record={selected} user={user} close={() => setSelected(null)} />}</div>;
 }

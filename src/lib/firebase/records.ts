@@ -1,8 +1,9 @@
 import type { User } from "firebase/auth";
 import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
-import { clearCaptureDraft, loadLocalRecordImage, saveLocalRecordImage, savePendingUpload } from "@/lib/capture-draft-store";
+import { clearCaptureDraft, deleteLocalRecordImage, deletePendingUpload, loadLocalRecordImage, saveLocalRecordImage, savePendingUpload } from "@/lib/capture-draft-store";
 import type { IdentificationInput } from "@/lib/identification-types";
+import { buildRecordSearchKeywords, type RecordUpdate } from "@/lib/record-mutations";
 import type { InsectIdentificationResult } from "@/lib/schemas";
 import type { InsectRecord, UploadStatus } from "@/lib/types";
 
@@ -79,17 +80,6 @@ export async function loadRecordImageUrl(user: User, recordId: string) {
   return URL.createObjectURL(await response.blob());
 }
 
-function buildSearchKeywords(result: InsectIdentificationResult, locationName: string, tags: string[]) {
-  const values = [result.commonNameJa, result.commonNameEn, result.scientificName, result.order, result.family, result.genus, locationName, ...tags];
-  return [...new Set(values.flatMap((value) => {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return [];
-    const fragments = [normalized];
-    for (let length = 2; length <= Math.min(normalized.length, 12); length += 1) fragments.push(normalized.slice(0, length));
-    return fragments;
-  }))];
-}
-
 export async function registerLocalIdentification(
   user: User,
   input: IdentificationInput,
@@ -140,7 +130,7 @@ export async function registerLocalIdentification(
     localOnly: true,
     aiModel: model,
     aiRawResult: result,
-    searchKeywords: buildSearchKeywords(result, input.locationName, tags),
+    searchKeywords: buildRecordSearchKeywords([result.commonNameJa, result.commonNameEn, result.scientificName, result.order, result.family, result.genus, input.locationName], tags),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -157,4 +147,23 @@ export async function registerLocalIdentification(
   });
   await clearCaptureDraft();
   return recordRef.id;
+}
+
+async function authenticatedRecordRequest(user: User, recordId: string, init: RequestInit) {
+  const token = await user.getIdToken();
+  const response = await fetch(`/api/records/${encodeURIComponent(recordId)}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init.headers },
+  });
+  const payload = await response.json().catch(() => ({})) as { error?: string };
+  if (!response.ok) throw new Error(payload.error || "図鑑の記録を変更できませんでした。");
+}
+
+export async function updateUserRecord(user: User, recordId: string, update: RecordUpdate) {
+  await authenticatedRecordRequest(user, recordId, { method: "PATCH", body: JSON.stringify(update) });
+}
+
+export async function deleteUserRecord(user: User, recordId: string) {
+  await authenticatedRecordRequest(user, recordId, { method: "DELETE" });
+  await Promise.allSettled([deleteLocalRecordImage(recordId), deletePendingUpload(recordId)]);
 }

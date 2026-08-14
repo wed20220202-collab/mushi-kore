@@ -101,6 +101,16 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .close { position:absolute; top:16px; right:16px; width:44px; height:44px; border:0; border-radius:50%; background:rgba(255,255,255,.92); display:grid; place-items:center; }
 .detail-content { padding:22px 22px 40px; }
 .detail-content h2 { margin:5px 0; font-size:1.75rem; letter-spacing:-.05em; }
+.detail-edit-form { margin-top:18px; }
+.form-grid label.favorite-toggle { min-height:48px; flex-direction:row; align-items:center; gap:10px; padding:0 13px; border:1px solid var(--line); border-radius:13px; background:var(--paper); color:var(--ink); }
+.form-grid label.favorite-toggle input { width:18px; height:18px; accent-color:var(--leaf); }
+.detail-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+.detail-actions button { min-height:50px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:16px; font-weight:900; }
+.detail-primary { border:0; background:var(--forest); color:white; }
+.detail-secondary { border:1px solid var(--line); background:var(--paper); color:var(--forest); }
+.detail-danger { border:1px solid rgba(179,77,61,.28); background:#fff6f2; color:var(--danger); }
+.detail-actions button:disabled,.close:disabled { opacity:.55; cursor:not-allowed; }
+.detail-error { margin:14px 0 0; padding:12px 14px; border-radius:14px; background:#f7ddd4; color:#7e3025; font-size:.76rem; line-height:1.6; }
 .badge-row { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
 .badge { padding:7px 10px; border-radius:999px; background:#e3eadc; color:var(--forest); font-size:.72rem; font-weight:800; }
 .info-panel { background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:16px; margin-top:14px; }
