@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const notoSans = Noto_Sans_JP({
@@ -7,7 +8,7 @@ const notoSans = Noto_Sans_JP({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.APP_BASE_URL ?? "https://mushi-kore.vercel.app";
+const siteUrl = getSiteUrl();
 const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 
 export const metadata: Metadata = {

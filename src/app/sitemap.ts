@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/site-url";
 
-const siteUrl = process.env.APP_BASE_URL ?? "https://mushi-kore.vercel.app";
+const siteUrl = getSiteUrl();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return ["", "/pricing", "/about", "/privacy", "/terms", "/contact"].map((path, index) => ({
