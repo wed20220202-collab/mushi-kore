@@ -106,7 +106,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
       {status === "review" && <section className="identify-stage identify-review">
         <div className="identify-photo"><img src={previewUrl} alt="AI判定する虫" /></div>
         <div className="eyebrow">READY TO IDENTIFY</div><h1>この虫を調べますか？</h1>
-        <p>圧縮済み画像をGemini APIへ送信します。無料版での開発テスト中は、個人情報が写った画像を使用しないでください。判定は参考情報であり、確定診断ではありません。</p>
+        <p>圧縮済み画像をGemini APIへ送信します。個人情報が写った画像を使用しないでください。判定は参考情報であり、確定診断ではありません。</p>
         <div className="identify-summary"><span><MapPin size={18} />{input.locationName || "位置情報なし"}</span><span>{input.image.width} × {input.image.height}px</span></div>
         <button className="capture-next" onClick={identify}><Sparkles size={20} />AI判定を開始</button>
         <button className="capture-secondary" onClick={onBack}>画像編集へ戻る</button>

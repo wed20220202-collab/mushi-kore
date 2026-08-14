@@ -18,7 +18,6 @@ import type { IdentificationInput } from "@/lib/identification-types";
 import { SettingsView } from "@/components/settings-view";
 import { TutorialView } from "@/components/tutorial-view";
 import { applyPreferences, readLocalPreferences } from "@/lib/firebase/preferences";
-import { PlanUsageCard } from "@/components/plan-usage-card";
 
 type Tab = "home" | "collection" | "search" | "settings" | "capture" | "identify";
 
@@ -114,7 +113,6 @@ function HomeView({ user, records, openRecord, goCollection, goCapture }: { user
         <p>カメラを向けるだけ。AIと一緒に、今日の小さな発見を記録しよう。</p>
         <button className="capture" onClick={goCapture}><Camera size={20} />虫を撮影する</button>
       </section>
-      <PlanUsageCard user={user} />
       <div className="stats">
         <div className="stat"><div className="stat-top"><span className="eyebrow">SPECIES</span><Leaf size={18} /></div><strong>{speciesCount}</strong><small>見つけた種類</small></div>
         <div className="stat"><div className="stat-top"><span className="eyebrow">RECORDS</span><Compass size={18} /></div><strong>{records.length}</strong><small>これまでの発見</small></div>
@@ -402,7 +400,7 @@ export function MushiKoreApp() {
     setStage("login");
   }
   if (!authReady) return <div className="phone-shell"><main className="empty-note" style={{ paddingTop: "45dvh" }}>ログイン状態を確認しています…</main></div>;
-  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><button className="guest-button" onClick={continueAsGuest}>ログインせず無料で試す</button><p className="legal">AI判定はゲストも回数無制限・無料です。ログインすると図鑑の保存・編集・削除が利用できます。続行前に利用規約とプライバシーポリシーをご確認ください。</p></div></section></div>;
+  if (stage === "login") return <div className="phone-shell"><section className="login-card"><div><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><h1>森の記憶を、<br />ポケットに。</h1><p>撮る。知る。集める。<br />AIと育てる、あなただけの昆虫図鑑。</p></div><div>{loginError&&<p role="alert" style={{ color:"#ffd8c8" }}>{loginError}</p>}<button className="google-button" onClick={login}><span style={{ fontSize:"1.2rem", fontWeight:900, color:"#4285f4" }}>G</span>Googleでログイン</button><button className="guest-button" onClick={continueAsGuest}>ログインせず試す</button><p className="legal">ログインすると図鑑の保存・編集・削除が利用できます。続行前に利用規約とプライバシーポリシーをご確認ください。</p></div></section></div>;
   if (stage === "consent") return <div className="phone-shell"><main className="content" style={{ paddingTop:50 }}><div className="brand"><span className="brand-mark"><Leaf size={21} /></span>むしコレ</div><div className="eyebrow" style={{ marginTop:60 }}>BEFORE WE START</div><h1 style={{ fontSize:"2rem", letterSpacing:"-.05em" }}>安心して図鑑を育てるために</h1><div className="info-panel"><h3>利用規約</h3><p>むしコレは18歳以上の方が利用できます。AI判定は確定診断ではありません。</p></div><div className="info-panel"><h3>プライバシー</h3><p>判定時に画像をGemini APIへ送信します。Googleログイン後に図鑑へ登録した画像だけが、製作者管理の非公開Google Driveへ保存されます。人物・住所などの個人情報が写る画像は使用しないでください。位置情報はAIへ送りません。</p></div><label style={{ display:"flex", gap:10, marginTop:22, lineHeight:1.6 }}><input type="checkbox" required id="consent" />18歳以上であり、利用規約とプライバシーポリシーに同意します</label><button className="capture" style={{ width:"100%", justifyContent:"center", marginTop:24 }} onClick={acceptAndContinue}>同意してはじめる</button></main></div>;
   if (stage === "tutorial") return <div className="phone-shell"><TutorialView displayName={getDisplayName(user)} onComplete={finishTutorial} /></div>;
   if (tab === "identify" && identificationInput) return <div className="phone-shell"><IdentificationFlow input={identificationInput} user={user} onLogin={login} onBack={() => setTab("capture")} onComplete={() => { setIdentificationInput(null); setTab("home"); }} /></div>;
