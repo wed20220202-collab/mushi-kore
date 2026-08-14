@@ -134,7 +134,7 @@ export function SettingsView({ user, onLogout, onLogin }: { user: User | null; o
         <button className="setting" onClick={() => setPanel("privacy")}><span className="setting-icon"><ShieldCheck size={20} /></span><span className="setting-copy"><strong>プライバシー</strong><small>位置情報・端末データの管理</small></span><ChevronRight size={18} /></button>
         <button className="setting" onClick={() => setPanel("display")}><span className="setting-icon"><Moon size={20} /></span><span className="setting-copy"><strong>表示</strong><small>{preferences.theme === "system" ? "端末の設定に合わせる" : preferences.theme === "dark" ? "ダーク" : "ライト"}</small></span><ChevronRight size={18} /></button>
       </div>
-      <a className="primary-setting-button pricing-link" href="/pricing">料金プランを見る</a>
+      <a className="primary-setting-button pricing-link" href="/pricing">無料利用について</a>
       <p className="legal settings-version">むしコレ v0.2.0 · プライベートβ<br />画像は本人専用のGoogle Driveフォルダへ保存されます。</p>
     </>}
 

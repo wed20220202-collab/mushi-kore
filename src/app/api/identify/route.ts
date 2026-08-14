@@ -2,9 +2,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import { createHmac } from "node:crypto";
 import { adminDb, verifyBearerToken } from "@/lib/firebase/admin";
 import { hasValidImageSignature } from "@/lib/image-signature";
-import { currentUsagePeriod, GUEST_DAILY_IMAGE_LIMIT } from "@/lib/plans";
+import { currentUsageDay, FREE_USER_DAILY_IMAGE_LIMIT, GUEST_DAILY_IMAGE_LIMIT } from "@/lib/plans";
 import { createIdentificationProvider } from "@/lib/services/ai";
-import { resolveUserPlan } from "@/lib/services/billing";
 
 const MAX_AI_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -41,13 +40,12 @@ async function consumeQuota(subject: string, period: string, limit: number, acco
 async function resolveRequester(request: Request) {
   if (request.headers.get("authorization")) {
     const token = await verifyBearerToken(request);
-    const plan = await resolveUserPlan(token.uid);
     return {
       subject: `user_${token.uid}`,
       accountType: "user" as const,
-      planId: plan.id,
-      quotaPeriod: currentUsagePeriod(),
-      quotaLimit: plan.monthlyImageLimit,
+      planId: "free",
+      quotaPeriod: currentUsageDay(),
+      quotaLimit: Number(process.env.MAX_DAILY_USER_AI_IDENTIFICATIONS ?? FREE_USER_DAILY_IMAGE_LIMIT),
       minuteLimit: Number(process.env.AI_RATE_LIMIT_PER_MINUTE ?? 3),
     };
   }
@@ -67,7 +65,7 @@ async function resolveRequester(request: Request) {
     subject: `guest_${hash}`,
     accountType: "guest" as const,
     planId: "guest",
-    quotaPeriod: new Date().toISOString().slice(0, 10),
+    quotaPeriod: currentUsageDay(),
     quotaLimit: GUEST_DAILY_IMAGE_LIMIT,
     minuteLimit: 1,
   };
@@ -90,7 +88,7 @@ export async function POST(request: Request) {
     return Response.json({ result, model: process.env.AI_MODEL ?? "mushi-kore-demo-v1", demo: (process.env.AI_PROVIDER ?? "mock") === "mock", usage: { used, limit: requester.quotaLimit, period: requester.quotaPeriod, planId: requester.planId } });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") return Response.json({ error: "ログインが必要です。" }, { status: 401 });
-    if (error instanceof Error && error.message === "AI_USAGE_LIMIT") return Response.json({ error: "現在のプランのAI判定上限に達しました。料金プランをご確認ください。" }, { status: 429 });
+    if (error instanceof Error && error.message === "AI_USAGE_LIMIT") return Response.json({ error: "本日の無料AI判定回数に達しました。明日またお試しください。" }, { status: 429 });
     if (error instanceof Error && error.message === "GUEST_ACCESS_NOT_CONFIGURED") return Response.json({ error: "ゲスト判定は現在準備中です。Googleログイン後にお試しください。" }, { status: 503 });
     return Response.json({ error: "AI判定を完了できませんでした。時間をおいて再試行してください。" }, { status: 500 });
   }

@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { firebaseAuth } from "@/lib/firebase/client";
+import { useEffect } from "react";
 
 declare global {
   interface Window { adsbygoogle?: Record<string, unknown>[]; }
@@ -34,31 +32,5 @@ export function AdBanner({ slot = process.env.NEXT_PUBLIC_ADSENSE_SLOT }: { slot
 }
 
 export function AccountAwareAdBanner() {
-  const [showAds, setShowAds] = useState<boolean | null>(firebaseAuth ? null : true);
-
-  useEffect(() => {
-    if (!firebaseAuth) return;
-    let disposed = false;
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-      if (!user) {
-        if (!disposed) setShowAds(true);
-        return;
-      }
-      if (!disposed) setShowAds(null);
-      try {
-        const token = await user.getIdToken();
-        const response = await fetch("/api/billing/status", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-        const payload = await response.json() as { adsEnabled?: boolean };
-        if (!disposed) setShowAds(response.ok ? payload.adsEnabled === true : false);
-      } catch {
-        if (!disposed) setShowAds(false);
-      }
-    });
-    return () => {
-      disposed = true;
-      unsubscribe();
-    };
-  }, []);
-
-  return showAds ? <AdBanner /> : null;
+  return <AdBanner />;
 }
