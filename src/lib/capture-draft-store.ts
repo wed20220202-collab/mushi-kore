@@ -1,4 +1,5 @@
 import type { CropMode } from "@/lib/image-processing";
+import type { CollectionCategory } from "@/lib/categories";
 
 const DATABASE_NAME = "mushi-kore-local";
 const STORE_NAME = "capture-drafts";
@@ -7,6 +8,7 @@ const PENDING_UPLOAD_STORE_NAME = "pending-uploads";
 const CURRENT_DRAFT = "current";
 
 export interface CaptureDraft {
+  category?: CollectionCategory;
   blob: Blob;
   fileName: string;
   mimeType: string;

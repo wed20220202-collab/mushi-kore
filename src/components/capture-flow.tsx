@@ -12,6 +12,7 @@ import { detectBlobImageMimeType, formatBytes, processImage, validateImageFile }
 import type { CropMode, ProcessedImage } from "@/lib/image-processing";
 import type { IdentificationInput } from "@/lib/identification-types";
 import { readLocalPreferences } from "@/lib/firebase/preferences";
+import { categoryConfig, categoryOrInsect, type CollectionCategory } from "@/lib/categories";
 
 type CaptureStep = "choose" | "edit" | "ready";
 
@@ -24,7 +25,8 @@ interface LocationState {
 
 const emptyLocation: LocationState = { latitude: null, longitude: null, locationName: "", status: "idle" };
 
-export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onIdentify: (input: IdentificationInput) => void }) {
+export function CaptureFlow({ category, onClose, onIdentify }: { category: CollectionCategory; onClose: () => void; onIdentify: (input: IdentificationInput) => void }) {
+  const categoryInfo = categoryConfig[category];
   const [step, setStep] = useState<CaptureStep>("choose");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -45,6 +47,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
     window.addEventListener("offline", updateOnline);
     void loadCaptureDraft().then(async (draft) => {
       if (!draft) return;
+      if (categoryOrInsect(draft.category) !== category) return;
       const detectedMimeType = await detectBlobImageMimeType(draft.blob);
       if (!detectedMimeType) throw new Error("一時保存された画像形式を確認できませんでした。");
       const url = URL.createObjectURL(draft.blob);
@@ -70,7 +73,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
       window.removeEventListener("offline", updateOnline);
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
-  }, []);
+  }, [category]);
 
   function replacePreviewUrl(blob: Blob) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -96,6 +99,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
 
   async function saveDraft(output: ProcessedImage, nextLocation = location) {
     const draft: CaptureDraft = {
+      category,
       blob: output.blob,
       fileName: file?.name ?? "restored-image.webp",
       mimeType: output.mimeType,
@@ -166,7 +170,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
     <main className="capture-flow">
       <header className="capture-header">
         <button className="round-button" onClick={onClose} aria-label="撮影を閉じる"><ArrowLeft size={21} /></button>
-        <div><span className="eyebrow">NEW DISCOVERY</span><strong>虫を記録する</strong></div>
+        <div><span className="eyebrow">NEW DISCOVERY</span><strong>{categoryInfo.subject}を記録する</strong></div>
         <span className={`network-state ${online ? "online" : "offline"}`}>{online ? <Check size={15} /> : <WifiOff size={15} />}{online ? "オンライン" : "オフライン"}</span>
       </header>
 
@@ -175,8 +179,8 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
       {step === "choose" && (
         <section className="capture-stage choose-stage">
           <div className="camera-orbit"><Camera size={48} strokeWidth={1.5} /></div>
-          <h1>どの虫を見つけた？</h1>
-          <p>虫が画面の中央に大きく写るように、明るい場所で撮影すると判別しやすくなります。</p>
+          <h1>どの{categoryInfo.subject}を見つけた？</h1>
+          <p>{categoryInfo.subject}が画面の中央に大きく写るように、明るい場所で撮影すると判別しやすくなります。</p>
           <label className="source-button primary-source">
             <Camera size={22} />カメラで撮影
             <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={(event) => chooseFile(event.target.files?.[0])} />
@@ -192,7 +196,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
       {step === "edit" && (
         <section className="capture-stage edit-stage">
           <div className={`edit-frame crop-${cropMode}`}>
-            <img src={previewUrl} alt="選択した虫のプレビュー" style={{ transform: `rotate(${rotation}deg)` }} />
+            <img src={previewUrl} alt={`選択した${categoryInfo.subject}のプレビュー`} style={{ transform: `rotate(${rotation}deg)` }} />
             <span className="focus-corner top-left" /><span className="focus-corner top-right" /><span className="focus-corner bottom-left" /><span className="focus-corner bottom-right" />
           </div>
           <div className="edit-toolbar">
@@ -221,7 +225,7 @@ export function CaptureFlow({ onClose, onIdentify }: { onClose: () => void; onId
             <div><Save size={19} /><span><small>端末内保存</small><strong>アップロード待ち 1件</strong></span><Check size={18} className="saved-check" /></div>
           </div>
           {!online && <div className="offline-explanation"><WifiOff size={18} /><span><strong>オフラインでも大丈夫</strong>通信が戻ったら、この画像から処理を再開できます。</span></div>}
-          <button className="capture-next" onClick={() => onIdentify({ image: processed, fileName: file?.name ?? "captured-insect.webp", rotation, cropMode, capturedAt, latitude: location.latitude, longitude: location.longitude, locationName: location.locationName })}><Sparkles size={20} />AI判定へ進む</button>
+          <button className="capture-next" onClick={() => onIdentify({ category, image: processed, fileName: file?.name ?? `captured-${category}.webp`, rotation, cropMode, capturedAt, latitude: location.latitude, longitude: location.longitude, locationName: location.locationName })}><Sparkles size={20} />AI判定へ進む</button>
           <button className="capture-secondary" onClick={onClose}><Save size={17} />一時保存してホームへ</button>
           <button className="capture-secondary danger-text" onClick={discardDraft}><Trash2 size={17} />この画像を破棄する</button>
           <p className="phase-note">次のフェーズで、この画像をAI判定して図鑑へ登録します。</p>

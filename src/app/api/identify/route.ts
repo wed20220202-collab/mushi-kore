@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { verifyBearerToken } from "@/lib/firebase/admin";
 import { hasValidImageSignature } from "@/lib/image-signature";
 import { createIdentificationProvider } from "@/lib/services/ai";
+import { isCollectionCategory } from "@/lib/categories";
 
 const MAX_AI_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -48,13 +49,15 @@ export async function POST(request: Request) {
     if (!checkMinuteRate(requester.subject, requester.minuteLimit)) return Response.json({ error: "短時間のAI判定回数が上限に達しました。1分ほど待ってください。" }, { status: 429 });
     const formData = await request.formData();
     const image = formData.get("image");
+    const category = formData.get("category");
+    if (!isCollectionCategory(category)) return Response.json({ error: "判定する図鑑の種類を選んでください。" }, { status: 400 });
     if (!(image instanceof File)) return Response.json({ error: "画像が必要です。" }, { status: 400 });
     if (!ALLOWED_MIME_TYPES.has(image.type)) return Response.json({ error: "対応していない画像形式です。" }, { status: 415 });
     if (image.size === 0 || image.size > MAX_AI_IMAGE_BYTES) return Response.json({ error: "画像は2MB以下にしてください。" }, { status: 413 });
     const bytes = new Uint8Array(await image.arrayBuffer());
     if (!hasValidImageSignature(bytes, image.type)) return Response.json({ error: "画像データを確認できませんでした。" }, { status: 415 });
     const provider = createIdentificationProvider();
-    const result = await provider.identify({ bytes, mimeType: image.type as "image/jpeg" | "image/png" | "image/webp" });
+    const result = await provider.identify({ bytes, mimeType: image.type as "image/jpeg" | "image/png" | "image/webp" }, category);
     return Response.json({ result, model: process.env.AI_MODEL ?? "mushi-kore-demo-v1", demo: (process.env.AI_PROVIDER ?? "mock") === "mock", usage: { unlimited: true } });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") return Response.json({ error: "ログインが必要です。" }, { status: 401 });

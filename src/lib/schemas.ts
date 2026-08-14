@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const collectionCategorySchema = z.enum(["insect", "fish", "flower", "animal"]);
+
 export const identificationCandidateSchema = z.object({
   commonNameJa: z.string().min(1).max(100),
   commonNameEn: z.string().max(120),
@@ -8,7 +10,8 @@ export const identificationCandidateSchema = z.object({
 });
 
 export const insectIdentificationSchema = z.object({
-  isInsect: z.boolean(),
+  category: collectionCategorySchema,
+  isTarget: z.boolean(),
   commonNameJa: z.string().min(1).max(100),
   commonNameEn: z.string().max(120),
   scientificName: z.string().max(160),

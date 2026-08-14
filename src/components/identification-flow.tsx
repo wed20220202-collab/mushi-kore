@@ -12,10 +12,12 @@ import { insectIdentificationSchema } from "@/lib/schemas";
 import type { InsectIdentificationResult } from "@/lib/schemas";
 import { registerLocalIdentification } from "@/lib/firebase/records";
 import { uploadRecordImage } from "@/lib/firebase/drive-upload";
+import { categoryConfig } from "@/lib/categories";
 
 type FlowStatus = "review" | "analyzing" | "result" | "confirm" | "saving" | "success" | "error";
 
 export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }: { input: IdentificationInput; user: User | null; onBack: () => void; onComplete: () => void; onLogin: () => Promise<void> }) {
+  const categoryInfo = categoryConfig[input.category];
   const [status, setStatus] = useState<FlowStatus>("review");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<InsectIdentificationResult | null>(null);
@@ -40,6 +42,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
     try {
       const formData = new FormData();
       formData.append("image", new File([input.image.blob], input.fileName, { type: input.image.mimeType }));
+      formData.append("category", input.category);
       const headers: HeadersInit = {};
       if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
       const response = await fetch("/api/identify", { method: "POST", headers, body: formData });
@@ -99,13 +102,13 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
     <main className="identify-flow">
       <header className="capture-header">
         <button className="round-button" onClick={onBack} aria-label="AI判定を閉じる"><ArrowLeft size={21} /></button>
-        <div><span className="eyebrow">AI IDENTIFICATION</span><strong>AIで虫を調べる</strong></div>
+        <div><span className="eyebrow">AI IDENTIFICATION · {categoryInfo.label}</span><strong>AIで{categoryInfo.subject}を調べる</strong></div>
         <span className="ai-chip"><Sparkles size={14} />AI</span>
       </header>
 
       {status === "review" && <section className="identify-stage identify-review">
-        <div className="identify-photo"><img src={previewUrl} alt="AI判定する虫" /></div>
-        <div className="eyebrow">READY TO IDENTIFY</div><h1>この虫を調べますか？</h1>
+        <div className="identify-photo"><img src={previewUrl} alt={`AI判定する${categoryInfo.subject}`} /></div>
+        <div className="eyebrow">READY TO IDENTIFY</div><h1>この{categoryInfo.subject}を調べますか？</h1>
         <p>圧縮済み画像をGemini APIへ送信します。個人情報が写った画像を使用しないでください。判定は参考情報であり、確定診断ではありません。</p>
         <div className="identify-summary"><span><MapPin size={18} />{input.locationName || "位置情報なし"}</span><span>{input.image.width} × {input.image.height}px</span></div>
         <button className="capture-next" onClick={identify}><Sparkles size={20} />AI判定を開始</button>
@@ -113,9 +116,9 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
       </section>}
 
       {status === "analyzing" && <section className="identify-stage analyzing-stage">
-        <div className="scan-photo"><img src={previewUrl} alt="AIが判定中の虫" /><span className="scan-line" /></div>
+        <div className="scan-photo"><img src={previewUrl} alt={`AIが判定中の${categoryInfo.subject}`} /><span className="scan-line" /></div>
         <div className="ai-orbit"><Sparkles size={30} /><span /><span /></div>
-        <h1>虫の特徴を調べています</h1><p>翅の模様や体の形、色をひとつずつ確認中です。</p>
+        <h1>{categoryInfo.subject}の特徴を調べています</h1><p>形や模様、色など、画像に写る特徴をひとつずつ確認中です。</p>
         <div className="ai-progress"><span style={{ width: `${progress}%` }} /></div><strong className="progress-number">{progress}%</strong>
         <div className="analysis-steps"><span className={progress > 15 ? "done" : "active"}><Check size={15} />画像の品質を確認</span><span className={progress > 45 ? "done" : "active"}><Check size={15} />外見の特徴を抽出</span><span className={progress > 75 ? "done" : "active"}><LoaderCircle size={15} />候補を比較</span></div>
       </section>}
@@ -123,10 +126,10 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
       {status === "error" && <section className="identify-stage centered-stage"><div className="error-orbit"><CircleAlert size={38} /></div><h1>判定できませんでした</h1><p>{error}</p><button className="capture-next" onClick={identify}><RefreshCw size={19} />もう一度試す</button><button className="capture-secondary" onClick={onBack}>画像を確認する</button></section>}
 
       {status === "result" && result && <section className="identify-stage result-stage">
-        <div className="result-hero"><img src={previewUrl} alt="判定した虫" /><span className="result-confidence"><Sparkles size={15} />{Math.round(result.confidence * 100)}% 一致</span></div>
+        <div className="result-hero"><img src={previewUrl} alt={`判定した${categoryInfo.subject}`} /><span className="result-confidence"><Sparkles size={15} />{Math.round(result.confidence * 100)}% 一致</span></div>
         {demo && <div className="demo-notice"><CircleAlert size={17} /><span><strong>デモ判定です</strong>実AI API接続後に画像ごとの判定へ切り替わります。</span></div>}
         {!demo && <div className="demo-notice"><Sparkles size={17} /><span><strong>Gemini正式判定</strong>画像を解析した結果です。確信度と候補を確認し、必要に応じて修正してください。</span></div>}
-        {!result.isInsect ? <div className="not-insect"><h1>虫を確認できませんでした</h1><p>虫が大きく写った別の画像で再試行してください。</p></div> : <>
+        {!result.isTarget ? <div className="not-insect"><h1>{categoryInfo.subject}を確認できませんでした</h1><p>{categoryInfo.subject}が大きく写った別の画像で再試行してください。</p></div> : <>
           <div className="result-heading"><div><span className="eyebrow">TOP MATCH</span><h1>{result.commonNameJa}</h1><i>{result.scientificName}</i></div><button onClick={() => document.querySelector<HTMLInputElement>("#commonNameJa")?.focus()} aria-label="判定結果を編集"><Edit3 size={19} /></button></div>
           <div className="taxonomy-row"><span>{result.order}</span><ChevronRight size={14} /><span>{result.family}</span><ChevronRight size={14} /><span>{result.genus}</span></div>
           <div className="result-panel"><h2>判別した理由</h2><p>{result.reason}</p></div>
@@ -140,7 +143,7 @@ export function IdentificationFlow({ input, user, onBack, onComplete, onLogin }:
 
       {(status === "confirm" || status === "saving") && result && <section className="identify-stage confirm-stage">
         <div className="eyebrow">CHECK & EDIT</div><h1>図鑑へ登録する内容</h1><p>AIの結果は自由に修正できます。</p>
-        <div className="confirm-photo"><img src={previewUrl} alt="登録する虫" /></div>
+        <div className="confirm-photo"><img src={previewUrl} alt={`登録する${categoryInfo.subject}`} /></div>
         <div className="form-grid">
           <label>和名<input id="commonNameJa" value={result.commonNameJa} onChange={(event) => updateResult("commonNameJa", event.target.value)} required /></label>
           <label>英名<input value={result.commonNameEn} onChange={(event) => updateResult("commonNameEn", event.target.value)} /></label>

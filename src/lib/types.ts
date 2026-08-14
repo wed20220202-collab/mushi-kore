@@ -1,3 +1,5 @@
+import type { CollectionCategory } from "@/lib/categories";
+
 export type UploadStatus = "preparing" | "compressing" | "identifying" | "uploading" | "uploaded" | "saving" | "completed" | "failed" | "cleanup_required";
 
 export interface IdentificationCandidate {
@@ -9,6 +11,7 @@ export interface IdentificationCandidate {
 export interface InsectRecord {
   id: string;
   userId: string;
+  category: CollectionCategory;
   commonNameJa: string;
   commonNameEn: string;
   scientificName: string;
@@ -16,6 +19,7 @@ export interface InsectRecord {
   family: string;
   genus: string;
   isInsect: boolean;
+  isTarget: boolean;
   candidates: IdentificationCandidate[];
   confidence: number;
   identificationReason: string;

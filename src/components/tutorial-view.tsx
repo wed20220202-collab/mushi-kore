@@ -7,15 +7,15 @@ import { useState } from "react";
 const tutorialSteps = [
   {
     image: "/tutorial/capture.webp",
-    alt: "葉の上の虫をスマートフォンで撮影している様子",
+    alt: "身近な生きものをスマートフォンで撮影している様子",
     eyebrow: "STEP 1 · CAPTURE",
-    title: "虫を見つけたら、撮影",
-    description: "撮影ボタンからカメラを開くか、端末にある写真を選びます。虫が中央に大きく写るようにすると判定しやすくなります。",
+    title: "図鑑を選んで、撮影",
+    description: "むし・魚・花・動物から図鑑を選び、カメラを開くか端末の写真を選びます。対象が中央に大きく写ると判定しやすくなります。",
     icon: Camera,
   },
   {
     image: "/tutorial/identify.webp",
-    alt: "スマートフォンの写真をAIが解析し、昆虫の候補を表示している様子",
+    alt: "スマートフォンの写真をAIが解析し、種類の候補を表示している様子",
     eyebrow: "STEP 2 · IDENTIFY",
     title: "AIが種類の候補を判定",
     description: "Geminiが写真の特徴を調べ、最大3件の候補と確信度を表示します。結果を確認して、必要なら名前やメモを直せます。",
@@ -23,10 +23,10 @@ const tutorialSteps = [
   },
   {
     image: "/tutorial/collect.webp",
-    alt: "撮影した虫がスマートフォンの自分専用図鑑に並んでいる様子",
+    alt: "撮影した生きものがスマートフォンの自分専用図鑑に並んでいる様子",
     eyebrow: "STEP 3 · COLLECT",
     title: "発見を自分の図鑑へ",
-    description: "写真・撮影日・場所・メモをまとめて保存。図鑑と検索から、これまでに出会った虫をいつでも振り返れます。",
+    description: "写真・撮影日・場所・メモをまとめてカテゴリ別に保存。図鑑と検索から、これまでの発見をいつでも振り返れます。",
     icon: BookOpen,
   },
 ] as const;
@@ -56,13 +56,13 @@ export function TutorialView({ displayName, onComplete }: TutorialViewProps) {
   return (
     <main className="tutorial">
       <div className="tutorial-topbar">
-        <div className="brand"><span className="brand-mark"><BookOpen size={20} /></span>むしコレ</div>
+        <div className="brand"><span className="brand-mark"><BookOpen size={20} /></span>むしコレ＋</div>
         {!isLast && <button className="tutorial-skip" onClick={finish} disabled={saving}>スキップ</button>}
       </div>
 
       <div className="tutorial-intro">
         <span className="eyebrow">WELCOME, {displayName}</span>
-        <h1>むしコレの使い方</h1>
+        <h1>むしコレ＋の使い方</h1>
       </div>
 
       <section className="tutorial-card" aria-live="polite">

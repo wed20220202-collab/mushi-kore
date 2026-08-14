@@ -6,6 +6,7 @@ import type { IdentificationInput } from "@/lib/identification-types";
 import { buildRecordSearchKeywords, type RecordUpdate } from "@/lib/record-mutations";
 import type { InsectIdentificationResult } from "@/lib/schemas";
 import type { InsectRecord, UploadStatus } from "@/lib/types";
+import { categoryConfig, categoryOrInsect } from "@/lib/categories";
 
 function timestampToIso(value: unknown) {
   if (value instanceof Timestamp) return value.toDate().toISOString();
@@ -16,6 +17,7 @@ function toInsectRecord(id: string, data: Record<string, unknown>): InsectRecord
   return {
     id,
     userId: String(data.userId ?? ""),
+    category: categoryOrInsect(data.category),
     commonNameJa: String(data.commonNameJa ?? "名前未設定"),
     commonNameEn: String(data.commonNameEn ?? ""),
     scientificName: String(data.scientificName ?? ""),
@@ -23,6 +25,7 @@ function toInsectRecord(id: string, data: Record<string, unknown>): InsectRecord
     family: String(data.family ?? ""),
     genus: String(data.genus ?? ""),
     isInsect: data.isInsect !== false,
+    isTarget: typeof data.isTarget === "boolean" ? data.isTarget : data.isInsect !== false,
     candidates: Array.isArray(data.candidates) ? data.candidates as InsectRecord["candidates"] : [],
     confidence: Number(data.confidence ?? 0),
     identificationReason: String(data.identificationReason ?? ""),
@@ -95,13 +98,15 @@ export async function registerLocalIdentification(
   await setDoc(recordRef, {
     id: recordRef.id,
     userId: user.uid,
+    category: input.category,
     commonNameJa: result.commonNameJa,
     commonNameEn: result.commonNameEn,
     scientificName: result.scientificName,
     order: result.order,
     family: result.family,
     genus: result.genus,
-    isInsect: result.isInsect,
+    isInsect: input.category === "insect" ? result.isTarget : false,
+    isTarget: result.isTarget,
     candidates: result.candidates,
     confidence: result.confidence,
     identificationReason: result.reason,
@@ -130,7 +135,7 @@ export async function registerLocalIdentification(
     localOnly: true,
     aiModel: model,
     aiRawResult: result,
-    searchKeywords: buildRecordSearchKeywords([result.commonNameJa, result.commonNameEn, result.scientificName, result.order, result.family, result.genus, input.locationName], tags),
+    searchKeywords: buildRecordSearchKeywords([result.commonNameJa, result.commonNameEn, result.scientificName, result.order, result.family, result.genus, input.locationName, categoryConfig[input.category].label], tags),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
