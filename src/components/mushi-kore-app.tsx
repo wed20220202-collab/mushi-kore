@@ -97,9 +97,10 @@ function Header({ user, category }: { user: User | null; category: CollectionCat
   const displayName = getDisplayName(user);
   const initial = displayName.charAt(0);
   const info = categoryConfig[category];
+  const CategoryIcon = categoryIcons[category];
   return (
     <header className="app-header">
-      <div className="brand"><span className="brand-mark" style={{ background: info.accent }}><Leaf size={21} /></span>{info.brand}<small>＋</small></div>
+      <div className="brand"><span className="brand-mark category-brand-mark" style={{ background: info.accent, color: info.color }}><CategoryIcon size={22} /></span>{info.brand}<small style={{ color: info.color }}>＋</small></div>
       <div
         className="avatar"
         aria-label={displayName}
@@ -188,6 +189,12 @@ function toLocalDateTimeValue(value: string) {
   return local.toISOString().slice(0, 16);
 }
 
+function parseOptionalCoordinate(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
 function Detail({ record, user, close }: { record: InsectRecord; user: User; close: () => void }) {
   const categoryInfo = categoryConfig[record.category];
   const [editing, setEditing] = useState(false);
@@ -202,6 +209,8 @@ function Detail({ record, user, close }: { record: InsectRecord; user: User; clo
     genus: record.genus,
     capturedAt: toLocalDateTimeValue(record.capturedAt),
     locationName: record.locationName,
+    latitude: record.latitude?.toString() ?? "",
+    longitude: record.longitude?.toString() ?? "",
     memo: record.memo,
     tagsText: record.tags.join("、"),
     favorite: record.favorite,
@@ -213,6 +222,12 @@ function Detail({ record, user, close }: { record: InsectRecord; user: User; clo
 
   async function save() {
     if (!fields.commonNameJa.trim() || !fields.capturedAt) return;
+    const latitude = parseOptionalCoordinate(fields.latitude);
+    const longitude = parseOptionalCoordinate(fields.longitude);
+    if ((latitude !== null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) || (longitude !== null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) {
+      setError("緯度は-90〜90、経度は-180〜180の範囲で入力してください。");
+      return;
+    }
     setBusy("saving");
     setError("");
     try {
@@ -225,6 +240,8 @@ function Detail({ record, user, close }: { record: InsectRecord; user: User; clo
         genus: fields.genus,
         capturedAt: new Date(fields.capturedAt).toISOString(),
         locationName: fields.locationName,
+        latitude,
+        longitude,
         memo: fields.memo,
         tags: fields.tagsText.split(/[、,\s]+/).map((tag) => tag.trim()).filter(Boolean).slice(0, 10),
         favorite: fields.favorite,
@@ -265,6 +282,8 @@ function Detail({ record, user, close }: { record: InsectRecord; user: User; clo
           <label className="full">属<input value={fields.genus} onChange={(event) => updateField("genus", event.target.value)} maxLength={100} /></label>
           <label className="full">撮影日時<input type="datetime-local" value={fields.capturedAt} onChange={(event) => updateField("capturedAt", event.target.value)} required /></label>
           <label className="full">撮影場所<input value={fields.locationName} onChange={(event) => updateField("locationName", event.target.value)} maxLength={200} /></label>
+          <label>緯度<input type="number" inputMode="decimal" min="-90" max="90" step="any" value={fields.latitude} onChange={(event) => updateField("latitude", event.target.value)} placeholder="35.6812" /></label>
+          <label>経度<input type="number" inputMode="decimal" min="-180" max="180" step="any" value={fields.longitude} onChange={(event) => updateField("longitude", event.target.value)} placeholder="139.7671" /></label>
           <label className="full">メモ<textarea value={fields.memo} onChange={(event) => updateField("memo", event.target.value)} maxLength={1500} /></label>
           <label className="full">タグ<input value={fields.tagsText} onChange={(event) => updateField("tagsText", event.target.value)} placeholder="夏、雑木林、夜" /></label>
           <label className="full favorite-toggle"><input type="checkbox" checked={fields.favorite} onChange={(event) => updateField("favorite", event.target.checked)} />お気に入りに登録</label>
@@ -363,19 +382,34 @@ export function MushiKoreApp() {
   useEffect(() => {
     if (!user) return;
     let disposed = false;
-    let activeObjectUrls: string[] = [];
+    let hydrationGeneration = 0;
+    const imageUrlsByRecordId = new Map<string, string>();
     const unsubscribe = subscribeUserRecords(user.uid, (nextRecords) => {
-      void Promise.all(nextRecords.map(async (record) => ({
-        ...record,
-        imageUrl: await loadRecordImageUrl(user, record.id).catch(() => ""),
-      }))).then((hydratedRecords) => {
-        const nextObjectUrls = hydratedRecords.map((record) => record.imageUrl).filter((url) => url.startsWith("blob:"));
-        if (disposed) {
-          nextObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+      const generation = ++hydrationGeneration;
+      void Promise.all(nextRecords.map(async (record) => {
+        const existingImageUrl = imageUrlsByRecordId.get(record.id);
+        return {
+          ...record,
+          imageUrl: existingImageUrl ?? await loadRecordImageUrl(user, record.id).catch(() => ""),
+        };
+      })).then((hydratedRecords) => {
+        const newlyCreatedUrls = hydratedRecords
+          .filter((record) => !imageUrlsByRecordId.has(record.id) && record.imageUrl.startsWith("blob:"))
+          .map((record) => record.imageUrl);
+        if (disposed || generation !== hydrationGeneration) {
+          newlyCreatedUrls.forEach((url) => URL.revokeObjectURL(url));
           return;
         }
-        activeObjectUrls.forEach((url) => URL.revokeObjectURL(url));
-        activeObjectUrls = nextObjectUrls;
+        const nextRecordIds = new Set(hydratedRecords.map((record) => record.id));
+        for (const [recordId, imageUrl] of imageUrlsByRecordId) {
+          if (!nextRecordIds.has(recordId)) {
+            URL.revokeObjectURL(imageUrl);
+            imageUrlsByRecordId.delete(recordId);
+          }
+        }
+        for (const record of hydratedRecords) {
+          if (record.imageUrl.startsWith("blob:")) imageUrlsByRecordId.set(record.id, record.imageUrl);
+        }
         setRecords(hydratedRecords);
       });
     }, () => {
@@ -384,7 +418,8 @@ export function MushiKoreApp() {
     return () => {
       disposed = true;
       unsubscribe();
-      activeObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+      imageUrlsByRecordId.forEach((url) => URL.revokeObjectURL(url));
+      imageUrlsByRecordId.clear();
     };
   }, [user]);
 

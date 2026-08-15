@@ -3,7 +3,12 @@ import { buildRecordSearchKeywords, recordUpdateSchema } from "@/lib/record-muta
 
 describe("recordUpdateSchema", () => {
   it("accepts editable record fields", () => {
-    expect(recordUpdateSchema.parse({ commonNameJa: "ナミアゲハ", favorite: true, tags: ["春", "公園"] })).toEqual({ commonNameJa: "ナミアゲハ", favorite: true, tags: ["春", "公園"] });
+    expect(recordUpdateSchema.parse({ commonNameJa: "ナミアゲハ", favorite: true, tags: ["春", "公園"], latitude: 35.6812, longitude: 139.7671 })).toEqual({ commonNameJa: "ナミアゲハ", favorite: true, tags: ["春", "公園"], latitude: 35.6812, longitude: 139.7671 });
+  });
+
+  it("rejects coordinates outside valid ranges", () => {
+    expect(recordUpdateSchema.safeParse({ latitude: 91 }).success).toBe(false);
+    expect(recordUpdateSchema.safeParse({ longitude: -181 }).success).toBe(false);
   });
 
   it("rejects protected and empty updates", () => {

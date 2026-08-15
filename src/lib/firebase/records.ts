@@ -155,11 +155,30 @@ export async function registerLocalIdentification(
 }
 
 async function authenticatedRecordRequest(user: User, recordId: string, init: RequestInit) {
-  const token = await user.getIdToken();
-  const response = await fetch(`/api/records/${encodeURIComponent(recordId)}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init.headers },
-  });
+  async function send(forceRefresh = false) {
+    const token = await user.getIdToken(forceRefresh);
+    return fetch(`/api/records/${encodeURIComponent(recordId)}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init.headers },
+      cache: "no-store",
+    });
+  }
+
+  let response: Response;
+  try {
+    response = await send();
+    if (response.status === 401 || response.status === 502 || response.status === 503 || response.status === 504) {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+      response = await send(response.status === 401);
+    }
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    try {
+      response = await send(true);
+    } catch {
+      throw new Error("通信が一時的に途切れました。接続を確認して、もう一度保存してください。");
+    }
+  }
   const payload = await response.json().catch(() => ({})) as { error?: string };
   if (!response.ok) throw new Error(payload.error || "図鑑の記録を変更できませんでした。");
 }

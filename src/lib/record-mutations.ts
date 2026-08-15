@@ -9,6 +9,8 @@ export const recordUpdateSchema = z.object({
   genus: z.string().trim().max(100).optional(),
   capturedAt: z.string().datetime().optional(),
   locationName: z.string().trim().max(200).optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   memo: z.string().trim().max(1500).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
   favorite: z.boolean().optional(),
